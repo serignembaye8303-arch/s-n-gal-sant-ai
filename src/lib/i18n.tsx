@@ -1,0 +1,272 @@
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+
+export type Lang = "fr" | "wo" | "en";
+
+type Dict = Record<string, string>;
+
+const dictionaries: Record<Lang, Dict> = {
+  fr: {
+    "app.name": "Sénégal Santé-IA",
+    "app.tagline": "Diagnostic intelligent. Soins accessibles.",
+    "nav.features": "Fonctionnalités",
+    "nav.modules": "Modules",
+    "nav.about": "À propos",
+    "nav.signin": "Se connecter",
+    "nav.getstarted": "Commencer",
+    "hero.title": "L'IA au service de la santé sénégalaise",
+    "hero.subtitle": "Une plateforme de triage médical intelligent qui assiste les agents de santé, accélère les diagnostics et connecte les spécialistes aux patients qui en ont besoin.",
+    "hero.cta.primary": "Accéder à la plateforme",
+    "hero.cta.secondary": "Découvrir les modules",
+    "features.title": "Conçu pour le terrain",
+    "features.ai.title": "IA de triage",
+    "features.ai.desc": "Analyse des symptômes et priorisation automatique des cas urgents.",
+    "features.records.title": "Dossier numérique",
+    "features.records.desc": "Données patients sécurisées, consultables par les bons profils.",
+    "features.network.title": "Réseau de soins",
+    "features.network.desc": "Agents de santé, spécialistes et établissements connectés en temps réel.",
+    "features.multilang.title": "Multilingue",
+    "features.multilang.desc": "Français, Wolof, Anglais — pensé pour le contexte local.",
+    "modules.title": "Trois modules. Une mission.",
+    "modules.agent.title": "Agent de santé",
+    "modules.agent.desc": "Enregistre les patients, saisit les symptômes, reçoit un diagnostic assisté par IA et transmet aux spécialistes.",
+    "modules.specialist.title": "Spécialiste",
+    "modules.specialist.desc": "Consulte les dossiers, valide ou corrige les diagnostics, échange avec les agents.",
+    "modules.admin.title": "Administrateur",
+    "modules.admin.desc": "Gère les utilisateurs, les rôles, les établissements et supervise les performances du système.",
+    "auth.signin.title": "Bienvenue",
+    "auth.signin.subtitle": "Connectez-vous pour accéder à votre espace",
+    "auth.signup.title": "Créer un compte",
+    "auth.signup.subtitle": "Rejoignez la plateforme de soins intelligente",
+    "auth.email": "Email",
+    "auth.password": "Mot de passe",
+    "auth.fullname": "Nom complet",
+    "auth.phone": "Téléphone",
+    "auth.facility": "Établissement de santé",
+    "auth.signin.button": "Se connecter",
+    "auth.signup.button": "S'inscrire",
+    "auth.toggle.signup": "Pas encore de compte ? S'inscrire",
+    "auth.toggle.signin": "Déjà inscrit ? Se connecter",
+    "auth.error.generic": "Une erreur est survenue. Veuillez réessayer.",
+    "auth.error.invalid": "Email ou mot de passe incorrect.",
+    "auth.success.signup": "Compte créé. Vous êtes connecté.",
+    "dashboard.welcome": "Bonjour",
+    "dashboard.signout": "Déconnexion",
+    "dashboard.role.admin": "Administrateur",
+    "dashboard.role.specialist": "Spécialiste",
+    "dashboard.role.agent": "Agent de santé",
+    "dashboard.agent.title": "Espace agent de santé",
+    "dashboard.agent.intro": "Enregistrez de nouveaux patients et obtenez une assistance IA pour le triage.",
+    "dashboard.agent.newpatient": "Nouveau patient",
+    "dashboard.agent.mypatients": "Mes patients",
+    "dashboard.agent.aitriage": "Triage IA",
+    "dashboard.specialist.title": "Espace spécialiste",
+    "dashboard.specialist.intro": "Consultez les dossiers transmis et validez les diagnostics IA.",
+    "dashboard.specialist.pending": "Dossiers en attente",
+    "dashboard.specialist.consultations": "Consultations",
+    "dashboard.specialist.messages": "Messagerie",
+    "dashboard.admin.title": "Console administrateur",
+    "dashboard.admin.intro": "Pilotage des utilisateurs, des rôles et de la performance globale.",
+    "dashboard.admin.users": "Utilisateurs",
+    "dashboard.admin.facilities": "Établissements",
+    "dashboard.admin.activity": "Activité système",
+    "dashboard.stats.patients": "Patients",
+    "dashboard.stats.diagnostics": "Diagnostics",
+    "dashboard.stats.pending": "En attente",
+    "dashboard.stats.resolved": "Traités",
+    "common.soon": "Bientôt disponible",
+    "common.loading": "Chargement...",
+    "lang.label": "Langue",
+    "footer.rights": "Tous droits réservés",
+  },
+  wo: {
+    "app.name": "Sénégal Santé-IA",
+    "app.tagline": "Diagnostique bu xam-xam. Faj bu yomb a am.",
+    "nav.features": "Jëfin yi",
+    "nav.modules": "Module yi",
+    "nav.about": "Ci mbiri",
+    "nav.signin": "Dugg",
+    "nav.getstarted": "Tambali",
+    "hero.title": "Xel-mu-mat ngir wér-gi-yaramu Senegaal",
+    "hero.subtitle": "Plateforme bu xam-xam ngir triage médical, di dimbali jëfandikukat ya, gaawal diagnostique yi, te boole spécialiste ya ak ñoom ñu am soxla.",
+    "hero.cta.primary": "Dugg ci plateforme bi",
+    "hero.cta.secondary": "Xool module yi",
+    "features.title": "Defaraat ngir terrain bi",
+    "features.ai.title": "Triage IA",
+    "features.ai.desc": "Saytu symptômes yi te tànn yu gën a jamp.",
+    "features.records.title": "Dossier numérique",
+    "features.records.desc": "Données patients yi am kaaraange, ndax ñu mën ko gis rekk.",
+    "features.network.title": "Réseau wér-gi-yaram",
+    "features.network.desc": "Agent yi, spécialiste yi ak hôpital yi boole ci waxtu wi.",
+    "features.multilang.title": "Làkk yu bari",
+    "features.multilang.desc": "Français, Wolof, Anglais — defaraat ngir nu sañ ko.",
+    "modules.title": "Ñetti module. Benn yité.",
+    "modules.agent.title": "Agent wér-gi-yaram",
+    "modules.agent.desc": "Bind patients, bind symptômes, jot diagnostique ak ndimbal IA, yónnee spécialiste.",
+    "modules.specialist.title": "Spécialiste",
+    "modules.specialist.desc": "Xool dossier yi, fàww diagnostique yi, waxtaan ak agent yi.",
+    "modules.admin.title": "Saxal-saxal",
+    "modules.admin.desc": "Yor jëfandikukat yi, rôle yi, hôpital yi te toppatoo système bi.",
+    "auth.signin.title": "Dalal jamm",
+    "auth.signin.subtitle": "Dugg ci sa kër",
+    "auth.signup.title": "Sos ab compte",
+    "auth.signup.subtitle": "Bokk ci plateforme bi",
+    "auth.email": "Email",
+    "auth.password": "Baatu-jubluwaay",
+    "auth.fullname": "Tur wu mat",
+    "auth.phone": "Telefon",
+    "auth.facility": "Hôpital",
+    "auth.signin.button": "Dugg",
+    "auth.signup.button": "Bind sa tur",
+    "auth.toggle.signup": "Amul compte ? Bind sa tur",
+    "auth.toggle.signin": "Am nga compte ? Dugg",
+    "auth.error.generic": "Am na njuumte. Jéemaat.",
+    "auth.error.invalid": "Email walla baatu-jubluwaay du dëgg.",
+    "auth.success.signup": "Compte bi sosu na. Dugg nga.",
+    "dashboard.welcome": "Asalaa maalekum",
+    "dashboard.signout": "Génn",
+    "dashboard.role.admin": "Saxal-saxal",
+    "dashboard.role.specialist": "Spécialiste",
+    "dashboard.role.agent": "Agent wér-gi-yaram",
+    "dashboard.agent.title": "Bérébu agent",
+    "dashboard.agent.intro": "Bind patients yu bees te jot ndimbal IA ngir triage.",
+    "dashboard.agent.newpatient": "Patient bu bees",
+    "dashboard.agent.mypatients": "Sama patients",
+    "dashboard.agent.aitriage": "Triage IA",
+    "dashboard.specialist.title": "Bérébu spécialiste",
+    "dashboard.specialist.intro": "Xool dossier yi te fàww diagnostique yi.",
+    "dashboard.specialist.pending": "Dossier yu xaar",
+    "dashboard.specialist.consultations": "Consultations",
+    "dashboard.specialist.messages": "Bataaxal",
+    "dashboard.admin.title": "Console saxal-saxal",
+    "dashboard.admin.intro": "Yor jëfandikukat, rôle, ak feeñal système bi.",
+    "dashboard.admin.users": "Jëfandikukat",
+    "dashboard.admin.facilities": "Hôpital yi",
+    "dashboard.admin.activity": "Activité",
+    "dashboard.stats.patients": "Patients",
+    "dashboard.stats.diagnostics": "Diagnostique",
+    "dashboard.stats.pending": "Xaar",
+    "dashboard.stats.resolved": "Faj",
+    "common.soon": "Mu ngi ñëw",
+    "common.loading": "Yeb...",
+    "lang.label": "Làkk",
+    "footer.rights": "Yelleef yépp aar nañu",
+  },
+  en: {
+    "app.name": "Senegal Health-AI",
+    "app.tagline": "Smart diagnosis. Accessible care.",
+    "nav.features": "Features",
+    "nav.modules": "Modules",
+    "nav.about": "About",
+    "nav.signin": "Sign in",
+    "nav.getstarted": "Get started",
+    "hero.title": "AI for Senegalese healthcare",
+    "hero.subtitle": "A smart medical triage platform that assists health workers, accelerates diagnosis, and connects specialists with the patients who need them.",
+    "hero.cta.primary": "Open the platform",
+    "hero.cta.secondary": "Explore modules",
+    "features.title": "Built for the field",
+    "features.ai.title": "AI triage",
+    "features.ai.desc": "Symptom analysis and automatic prioritization of urgent cases.",
+    "features.records.title": "Digital records",
+    "features.records.desc": "Secure patient data, accessible only by the right roles.",
+    "features.network.title": "Care network",
+    "features.network.desc": "Health workers, specialists, and facilities connected in real time.",
+    "features.multilang.title": "Multilingual",
+    "features.multilang.desc": "French, Wolof, English — built for the local context.",
+    "modules.title": "Three modules. One mission.",
+    "modules.agent.title": "Health worker",
+    "modules.agent.desc": "Register patients, record symptoms, get AI-assisted diagnosis, and forward to specialists.",
+    "modules.specialist.title": "Specialist",
+    "modules.specialist.desc": "Review records, validate or correct AI diagnoses, message agents.",
+    "modules.admin.title": "Administrator",
+    "modules.admin.desc": "Manage users, roles, facilities, and monitor system performance.",
+    "auth.signin.title": "Welcome back",
+    "auth.signin.subtitle": "Sign in to access your workspace",
+    "auth.signup.title": "Create an account",
+    "auth.signup.subtitle": "Join the smart care platform",
+    "auth.email": "Email",
+    "auth.password": "Password",
+    "auth.fullname": "Full name",
+    "auth.phone": "Phone",
+    "auth.facility": "Health facility",
+    "auth.signin.button": "Sign in",
+    "auth.signup.button": "Sign up",
+    "auth.toggle.signup": "No account yet? Sign up",
+    "auth.toggle.signin": "Already registered? Sign in",
+    "auth.error.generic": "Something went wrong. Please try again.",
+    "auth.error.invalid": "Invalid email or password.",
+    "auth.success.signup": "Account created. You're signed in.",
+    "dashboard.welcome": "Hello",
+    "dashboard.signout": "Sign out",
+    "dashboard.role.admin": "Administrator",
+    "dashboard.role.specialist": "Specialist",
+    "dashboard.role.agent": "Health worker",
+    "dashboard.agent.title": "Health worker workspace",
+    "dashboard.agent.intro": "Register new patients and get AI assistance for triage.",
+    "dashboard.agent.newpatient": "New patient",
+    "dashboard.agent.mypatients": "My patients",
+    "dashboard.agent.aitriage": "AI triage",
+    "dashboard.specialist.title": "Specialist workspace",
+    "dashboard.specialist.intro": "Review forwarded records and validate AI diagnoses.",
+    "dashboard.specialist.pending": "Pending records",
+    "dashboard.specialist.consultations": "Consultations",
+    "dashboard.specialist.messages": "Messages",
+    "dashboard.admin.title": "Admin console",
+    "dashboard.admin.intro": "Manage users, roles, and overall system performance.",
+    "dashboard.admin.users": "Users",
+    "dashboard.admin.facilities": "Facilities",
+    "dashboard.admin.activity": "System activity",
+    "dashboard.stats.patients": "Patients",
+    "dashboard.stats.diagnostics": "Diagnoses",
+    "dashboard.stats.pending": "Pending",
+    "dashboard.stats.resolved": "Resolved",
+    "common.soon": "Coming soon",
+    "common.loading": "Loading...",
+    "lang.label": "Language",
+    "footer.rights": "All rights reserved",
+  },
+};
+
+interface I18nContextValue {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  t: (key: string) => string;
+}
+
+const I18nContext = createContext<I18nContextValue | null>(null);
+
+const STORAGE_KEY = "ssia.lang";
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>("fr");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem(STORAGE_KEY) as Lang | null;
+    if (saved && ["fr", "wo", "en"].includes(saved)) {
+      setLangState(saved);
+    }
+  }, []);
+
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, l);
+    }
+  };
+
+  const t = (key: string) => dictionaries[lang][key] ?? dictionaries.fr[key] ?? key;
+
+  return <I18nContext.Provider value={{ lang, setLang, t }}>{children}</I18nContext.Provider>;
+}
+
+export function useI18n() {
+  const ctx = useContext(I18nContext);
+  if (!ctx) throw new Error("useI18n must be used within I18nProvider");
+  return ctx;
+}
+
+export const LANG_LABELS: Record<Lang, string> = {
+  fr: "Français",
+  wo: "Wolof",
+  en: "English",
+};
