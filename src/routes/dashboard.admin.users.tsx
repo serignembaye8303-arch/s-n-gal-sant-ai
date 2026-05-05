@@ -1,10 +1,9 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Activity, ArrowLeft, Loader2, ShieldCheck, Stethoscope, UserCog } from "lucide-react";
+import { Activity, ArrowLeft, Loader2, ShieldCheck, Stethoscope } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
