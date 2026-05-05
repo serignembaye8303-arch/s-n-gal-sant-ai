@@ -126,20 +126,30 @@ function StatCard({ label, value, icon: Icon, tone = "primary" }: { label: strin
   );
 }
 
-function ActionCard({ title, icon: Icon, soon = true }: { title: string; icon: LucideIcon; soon?: boolean }) {
+function ActionCard({ title, icon: Icon, soon = true, to }: { title: string; icon: LucideIcon; soon?: boolean; to?: string }) {
   const { t } = useI18n();
-  return (
-    <button
-      type="button"
-      className="group flex flex-col items-start gap-3 rounded-xl border border-border/60 bg-card p-5 text-left shadow-soft transition-all hover:border-primary/40 hover:shadow-elevated"
-    >
+  const inner = (
+    <>
       <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary-soft text-primary transition-transform group-hover:scale-105">
         <Icon className="h-5 w-5" />
       </div>
       <div>
         <p className="font-medium">{title}</p>
-        {soon && <p className="mt-0.5 text-xs text-muted-foreground">{t("common.soon")}</p>}
+        {soon && !to && <p className="mt-0.5 text-xs text-muted-foreground">{t("common.soon")}</p>}
       </div>
+    </>
+  );
+  const cls = "group flex flex-col items-start gap-3 rounded-xl border border-border/60 bg-card p-5 text-left shadow-soft transition-all hover:border-primary/40 hover:shadow-elevated";
+  if (to) {
+    return (
+      <Link to={to} className={cls}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" className={cls}>
+      {inner}
     </button>
   );
 }
@@ -193,7 +203,7 @@ function AdminDashboard() {
         <StatCard label={t("dashboard.admin.activity")} value="—" icon={BarChart3} tone="primary" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <ActionCard title={t("dashboard.admin.users")} icon={Users} />
+        <ActionCard title={t("dashboard.admin.users")} icon={Users} to="/dashboard/admin/users" />
         <ActionCard title={t("dashboard.admin.facilities")} icon={Building2} />
         <ActionCard title={t("dashboard.admin.activity")} icon={BarChart3} />
       </div>
