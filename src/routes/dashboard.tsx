@@ -187,6 +187,7 @@ function SpecialistDashboard() {
         <ActionCard title={t("dashboard.specialist.pending")} icon={FileText} />
         <ActionCard title={t("dashboard.specialist.consultations")} icon={Stethoscope} />
         <ActionCard title={t("dashboard.specialist.messages")} icon={MessageSquare} />
+        <ActionCard title={t("aiperf.nav")} icon={BarChart3} to="/dashboard/ai-performance" />
       </div>
     </div>
   );
@@ -204,6 +205,7 @@ function AdminDashboard() {
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <ActionCard title={t("dashboard.admin.users")} icon={Users} to="/dashboard/admin/users" />
+        <ActionCard title={t("aiperf.nav")} icon={BarChart3} to="/dashboard/ai-performance" />
         <ActionCard title={t("dashboard.admin.facilities")} icon={Building2} />
         <ActionCard title={t("dashboard.admin.activity")} icon={BarChart3} />
       </div>
