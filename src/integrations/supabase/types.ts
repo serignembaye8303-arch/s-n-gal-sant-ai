@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_diagnostics_logs: {
+        Row: {
+          agent_id: string
+          confidence_score: number | null
+          created_at: string
+          facility: string
+          id: string
+          latency_ms: number
+          model: string
+          specialist_agrees: boolean | null
+          suggested_diagnosis: string | null
+          symptoms_summary: string | null
+          validated_by_specialist: boolean | null
+        }
+        Insert: {
+          agent_id: string
+          confidence_score?: number | null
+          created_at?: string
+          facility?: string
+          id?: string
+          latency_ms: number
+          model: string
+          specialist_agrees?: boolean | null
+          suggested_diagnosis?: string | null
+          symptoms_summary?: string | null
+          validated_by_specialist?: boolean | null
+        }
+        Update: {
+          agent_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          facility?: string
+          id?: string
+          latency_ms?: number
+          model?: string
+          specialist_agrees?: boolean | null
+          suggested_diagnosis?: string | null
+          symptoms_summary?: string | null
+          validated_by_specialist?: boolean | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
