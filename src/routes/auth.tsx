@@ -40,11 +40,13 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
   const [facility, setFacility] = useState("");
 
+  const { role } = useAuth();
+
   useEffect(() => {
     if (!loading && user) {
-      navigate({ to: "/dashboard" });
+      navigate({ to: roleHomePath(role) });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, role, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
