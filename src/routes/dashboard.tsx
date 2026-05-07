@@ -20,8 +20,12 @@ function DashboardPage() {
   useEffect(() => {
     if (!loading && !user) {
       navigate({ to: "/auth" });
+    } else if (!loading && user && role === "admin") {
+      navigate({ to: "/dashboard/admin/users" });
+    } else if (!loading && user && role === "specialist") {
+      navigate({ to: "/dashboard/ai-performance" });
     }
-  }, [user, loading, navigate]);
+  }, [user, role, loading, navigate]);
 
   if (loading || !user) {
     return (
