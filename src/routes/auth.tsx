@@ -28,7 +28,7 @@ const signUpSchema = signInSchema.extend({
 
 function AuthPage() {
   const { t } = useI18n();
-  const { user, loading } = useAuth();
+  const { user, loading, role } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [submitting, setSubmitting] = useState(false);
@@ -39,8 +39,6 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [facility, setFacility] = useState("");
-
-  const { role } = useAuth();
 
   useEffect(() => {
     if (!loading && user) {
