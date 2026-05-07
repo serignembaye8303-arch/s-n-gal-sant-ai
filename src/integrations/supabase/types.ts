@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string
+          created_at: string
+          details: Json
+          id: string
+          target_email: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_email?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          target_email?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_diagnostics_logs: {
         Row: {
           agent_id: string
@@ -63,6 +96,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          status: Database["public"]["Enums"]["user_status"]
           updated_at: string
         }
         Insert: {
@@ -71,6 +105,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
         }
         Update: {
@@ -79,6 +114,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
         }
         Relationships: []
@@ -119,6 +155,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "specialist" | "agent"
+      user_status: "active" | "suspended" | "disabled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -247,6 +284,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "specialist", "agent"],
+      user_status: ["active", "suspended", "disabled"],
     },
   },
 } as const

@@ -1,10 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Activity, ArrowLeft, Loader2, ShieldCheck, Stethoscope } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import { Activity, ArrowLeft, Loader2, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -12,14 +15,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { listUsers, setUserRole } from "@/server/admin.functions";
+import { listUsers, setUserRole, createUser, updateUser, deleteUser } from "@/server/admin.functions";
 
 export const Route = createFileRoute("/dashboard/admin/users")({
   component: AdminUsersPage,
 });
 
 type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
+type Status = "active" | "suspended" | "disabled";
 
 function AdminUsersPage() {
   const { user, role, loading } = useAuth();
@@ -28,6 +56,9 @@ function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<UserRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -63,6 +94,18 @@ function AdminUsersPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteUser({ data: { user_id: deleteTarget.id } });
+      toast.success("Utilisateur supprimé");
+      setDeleteTarget(null);
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erreur");
+    }
+  };
+
   if (loading || !user || role !== "admin") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -92,21 +135,28 @@ function AdminUsersPage() {
           <ArrowLeft className="h-4 w-4" />
           {t("dashboard.role.admin")}
         </Link>
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
-            {t("admin.users.title")}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            {t("admin.users.intro")}
-          </p>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
+              {t("admin.users.title")}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {t("admin.users.intro")}
+            </p>
+          </div>
+          <Button onClick={() => setCreateOpen(true)} className="gap-1.5">
+            <Plus className="h-4 w-4" />
+            Ajouter un utilisateur
+          </Button>
         </div>
 
         <div className="rounded-xl border border-border/60 bg-card shadow-soft">
           <div className="grid grid-cols-12 gap-3 border-b border-border/60 px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            <div className="col-span-4">{t("admin.users.user")}</div>
-            <div className="col-span-3 hidden md:block">{t("auth.facility")}</div>
+            <div className="col-span-3">{t("admin.users.user")}</div>
+            <div className="col-span-2 hidden md:block">{t("auth.facility")}</div>
+            <div className="col-span-2 hidden md:block">Statut</div>
             <div className="col-span-2 hidden md:block">{t("admin.users.current")}</div>
-            <div className="col-span-12 md:col-span-3">{t("admin.users.change")}</div>
+            <div className="col-span-12 md:col-span-3 text-right">Actions</div>
           </div>
 
           {loadingList ? (
@@ -122,11 +172,8 @@ function AdminUsersPage() {
               {users.map((u) => {
                 const isSelf = u.id === user.id;
                 return (
-                  <li
-                    key={u.id}
-                    className="grid grid-cols-12 items-center gap-3 px-5 py-4"
-                  >
-                    <div className="col-span-12 md:col-span-4">
+                  <li key={u.id} className="grid grid-cols-12 items-center gap-3 px-5 py-4">
+                    <div className="col-span-12 md:col-span-3">
                       <p className="font-medium">
                         {u.full_name || <span className="text-muted-foreground">—</span>}
                         {isSelf && (
@@ -137,19 +184,22 @@ function AdminUsersPage() {
                       </p>
                       <p className="text-xs text-muted-foreground">{u.email || u.id.slice(0, 8)}</p>
                     </div>
-                    <div className="col-span-6 hidden text-sm text-muted-foreground md:col-span-3 md:block">
+                    <div className="col-span-6 hidden text-sm text-muted-foreground md:col-span-2 md:block">
                       {u.facility || "—"}
+                    </div>
+                    <div className="col-span-6 hidden md:col-span-2 md:block">
+                      <StatusBadge status={u.status} />
                     </div>
                     <div className="col-span-6 hidden md:col-span-2 md:block">
                       <RoleBadgeInline role={u.primary_role} />
                     </div>
-                    <div className="col-span-12 md:col-span-3">
+                    <div className="col-span-12 flex items-center justify-end gap-2 md:col-span-3">
                       <Select
                         value={u.primary_role}
                         onValueChange={(v) => handleRoleChange(u.id, v as AppRole)}
                         disabled={updatingId === u.id || (isSelf && u.primary_role === "admin")}
                       >
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger className="h-9 w-[140px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -158,6 +208,25 @@ function AdminUsersPage() {
                           <SelectItem value="admin">{t("dashboard.role.admin")}</SelectItem>
                         </SelectContent>
                       </Select>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-9 w-9">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditTarget(u)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setDeleteTarget(u)}
+                            disabled={isSelf}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </li>
                 );
@@ -166,6 +235,227 @@ function AdminUsersPage() {
           )}
         </div>
       </main>
+
+      <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />
+      <EditUserDialog target={editTarget} onOpenChange={(o) => !o && setEditTarget(null)} onSaved={refresh} />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action supprime définitivement le compte de{" "}
+              <span className="font-medium text-foreground">
+                {deleteTarget?.full_name || deleteTarget?.email}
+              </span>
+              . Une trace est conservée dans les journaux d'audit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function CreateUserDialog({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onCreated: () => void;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [facility, setFacility] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<AppRole>("agent");
+
+  const reset = () => {
+    setFullName(""); setEmail(""); setPhone(""); setFacility(""); setPassword(""); setRole("agent");
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await createUser({
+        data: { full_name: fullName, email, phone, facility, password, role },
+      });
+      toast.success("Utilisateur créé");
+      reset();
+      onOpenChange(false);
+      onCreated();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Ajouter un utilisateur</DialogTitle>
+          <DialogDescription>
+            Créez un compte avec un rôle attribué. L'email est confirmé automatiquement.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormField id="c-fullname" label="Nom complet" value={fullName} onChange={setFullName} required maxLength={100} />
+          <div className="grid grid-cols-2 gap-3">
+            <FormField id="c-email" label="Email" type="email" value={email} onChange={setEmail} required maxLength={255} />
+            <FormField id="c-phone" label="Téléphone" type="tel" value={phone} onChange={setPhone} maxLength={30} />
+          </div>
+          <FormField id="c-facility" label="Centre de santé" value={facility} onChange={setFacility} maxLength={150} />
+          <FormField id="c-password" label="Mot de passe" type="password" value={password} onChange={setPassword} required minLength={8} maxLength={72} />
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Rôle</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Administrateur</SelectItem>
+                <SelectItem value="specialist">Spécialiste</SelectItem>
+                <SelectItem value="agent">Agent de santé</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Annuler</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Créer"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditUserDialog({
+  target,
+  onOpenChange,
+  onSaved,
+}: {
+  target: UserRow | null;
+  onOpenChange: (o: boolean) => void;
+  onSaved: () => void;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [facility, setFacility] = useState("");
+  const [role, setRole] = useState<AppRole>("agent");
+  const [status, setStatus] = useState<Status>("active");
+
+  useEffect(() => {
+    if (target) {
+      setFullName(target.full_name);
+      setPhone(target.phone);
+      setFacility(target.facility);
+      setRole(target.primary_role);
+      setStatus(target.status);
+    }
+  }, [target]);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!target) return;
+    setSubmitting(true);
+    try {
+      await updateUser({
+        data: {
+          user_id: target.id,
+          full_name: fullName,
+          phone,
+          facility,
+          role,
+          status,
+        },
+      });
+      toast.success("Utilisateur mis à jour");
+      onOpenChange(false);
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!target} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Modifier l'utilisateur</DialogTitle>
+          <DialogDescription>{target?.email}</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormField id="e-fullname" label="Nom complet" value={fullName} onChange={setFullName} required maxLength={100} />
+          <div className="grid grid-cols-2 gap-3">
+            <FormField id="e-phone" label="Téléphone" type="tel" value={phone} onChange={setPhone} maxLength={30} />
+            <FormField id="e-facility" label="Centre de santé" value={facility} onChange={setFacility} maxLength={150} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Rôle (permissions)</Label>
+              <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrateur</SelectItem>
+                  <SelectItem value="specialist">Spécialiste</SelectItem>
+                  <SelectItem value="agent">Agent de santé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Statut</Label>
+              <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Actif</SelectItem>
+                  <SelectItem value="suspended">Suspendu</SelectItem>
+                  <SelectItem value="disabled">Désactivé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Annuler</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enregistrer"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FormField({
+  id, label, value, onChange, type = "text", required, maxLength, minLength,
+}: {
+  id: string; label: string; value: string; onChange: (v: string) => void;
+  type?: string; required?: boolean; maxLength?: number; minLength?: number;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-xs font-medium">{label}</Label>
+      <Input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)}
+        required={required} maxLength={maxLength} minLength={minLength} className="h-10" />
     </div>
   );
 }
@@ -184,4 +474,14 @@ function RoleBadgeInline({ role }: { role: AppRole }) {
       <span className="text-xs font-medium">{label}</span>
     </Badge>
   );
+}
+
+function StatusBadge({ status }: { status: Status }) {
+  const map: Record<Status, { label: string; cls: string }> = {
+    active: { label: "Actif", cls: "bg-success-soft text-success border-success/30" },
+    suspended: { label: "Suspendu", cls: "bg-warning/15 text-warning-foreground border-warning/30" },
+    disabled: { label: "Désactivé", cls: "bg-muted text-muted-foreground border-border" },
+  };
+  const { label, cls } = map[status];
+  return <Badge variant="outline" className={`text-xs ${cls}`}>{label}</Badge>;
 }
