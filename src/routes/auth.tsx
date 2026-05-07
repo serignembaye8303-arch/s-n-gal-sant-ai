@@ -62,7 +62,8 @@ function AuthPage() {
           toast.error(t("auth.error.invalid"));
           return;
         }
-        navigate({ to: roleHomePath(await fetchPrimaryRole(signInData.user.id)) });
+        const targetRole = await fetchPrimaryRole(signInData.user.id);
+        navigate({ to: roleHomePath(targetRole) });
       } else {
         const parsed = signUpSchema.safeParse({ email, password, fullName, phone, facility });
         if (!parsed.success) {
