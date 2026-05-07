@@ -179,7 +179,12 @@ export const updateUser = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
 
-    const profileUpdate: Record<string, unknown> = {};
+    const profileUpdate: {
+      full_name?: string;
+      phone?: string;
+      facility?: string;
+      status?: Status;
+    } = {};
     if (data.full_name !== undefined) profileUpdate.full_name = data.full_name;
     if (data.phone !== undefined) profileUpdate.phone = data.phone;
     if (data.facility !== undefined) profileUpdate.facility = data.facility;
