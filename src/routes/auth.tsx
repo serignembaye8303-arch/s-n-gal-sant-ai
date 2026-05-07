@@ -4,6 +4,7 @@ import { Activity, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { roleHomePath, fetchPrimaryRole } from "@/lib/role-routing";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ const signUpSchema = signInSchema.extend({
 
 function AuthPage() {
   const { t } = useI18n();
-  const { user, loading } = useAuth();
+  const { user, loading, role } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [submitting, setSubmitting] = useState(false);
@@ -42,9 +43,9 @@ function AuthPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate({ to: "/dashboard" });
+      navigate({ to: roleHomePath(role) });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, role, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -57,12 +58,13 @@ function AuthPage() {
           toast.error(t("auth.error.generic"));
           return;
         }
-        const { error } = await supabase.auth.signInWithPassword(parsed.data);
-        if (error) {
+        const { data: signInData, error } = await supabase.auth.signInWithPassword(parsed.data);
+        if (error || !signInData.user) {
           toast.error(t("auth.error.invalid"));
           return;
         }
-        navigate({ to: "/dashboard" });
+        const targetRole = await fetchPrimaryRole(signInData.user.id);
+        navigate({ to: roleHomePath(targetRole) });
       } else {
         const parsed = signUpSchema.safeParse({ email, password, fullName, phone, facility });
         if (!parsed.success) {
