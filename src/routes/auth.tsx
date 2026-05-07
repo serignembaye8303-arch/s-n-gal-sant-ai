@@ -57,12 +57,12 @@ function AuthPage() {
           toast.error(t("auth.error.generic"));
           return;
         }
-        const { error } = await supabase.auth.signInWithPassword(parsed.data);
-        if (error) {
+        const { data: signInData, error } = await supabase.auth.signInWithPassword(parsed.data);
+        if (error || !signInData.user) {
           toast.error(t("auth.error.invalid"));
           return;
         }
-        navigate({ to: "/dashboard" });
+        navigate({ to: roleHomePath(await fetchPrimaryRole(signInData.user.id)) });
       } else {
         const parsed = signUpSchema.safeParse({ email, password, fullName, phone, facility });
         if (!parsed.success) {
