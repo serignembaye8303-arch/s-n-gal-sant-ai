@@ -28,7 +28,7 @@ async function logAction(actorId: string, action: string, targetUserId: string |
     action,
     target_user_id: targetUserId,
     target_email: targetEmail,
-    details,
+    details: details as never,
   });
 }
 
