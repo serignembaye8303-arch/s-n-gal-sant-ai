@@ -15,6 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardAiPerformanceRouteImport } from './routes/dashboard.ai-performance'
 import { Route as AuthConfirmRouteImport } from './routes/auth.confirm'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
+import { Route as DashboardAdminSpecialistsRouteImport } from './routes/dashboard.admin.specialists'
+import { Route as DashboardAdminAgentsRouteImport } from './routes/dashboard.admin.agents'
 
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
@@ -46,6 +48,17 @@ const DashboardAdminUsersRoute = DashboardAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAdminSpecialistsRoute =
+  DashboardAdminSpecialistsRouteImport.update({
+    id: '/admin/specialists',
+    path: '/admin/specialists',
+    getParentRoute: () => DashboardRoute,
+  } as any)
+const DashboardAdminAgentsRoute = DashboardAdminAgentsRouteImport.update({
+  id: '/admin/agents',
+  path: '/admin/agents',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,6 +66,8 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/auth/confirm': typeof AuthConfirmRoute
   '/dashboard/ai-performance': typeof DashboardAiPerformanceRoute
+  '/dashboard/admin/agents': typeof DashboardAdminAgentsRoute
+  '/dashboard/admin/specialists': typeof DashboardAdminSpecialistsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +76,8 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRouteWithChildren
   '/auth/confirm': typeof AuthConfirmRoute
   '/dashboard/ai-performance': typeof DashboardAiPerformanceRoute
+  '/dashboard/admin/agents': typeof DashboardAdminAgentsRoute
+  '/dashboard/admin/specialists': typeof DashboardAdminSpecialistsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
 export interface FileRoutesById {
@@ -70,6 +87,8 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/auth/confirm': typeof AuthConfirmRoute
   '/dashboard/ai-performance': typeof DashboardAiPerformanceRoute
+  '/dashboard/admin/agents': typeof DashboardAdminAgentsRoute
+  '/dashboard/admin/specialists': typeof DashboardAdminSpecialistsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +99,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/auth/confirm'
     | '/dashboard/ai-performance'
+    | '/dashboard/admin/agents'
+    | '/dashboard/admin/specialists'
     | '/dashboard/admin/users'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +109,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/auth/confirm'
     | '/dashboard/ai-performance'
+    | '/dashboard/admin/agents'
+    | '/dashboard/admin/specialists'
     | '/dashboard/admin/users'
   id:
     | '__root__'
@@ -96,6 +119,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/auth/confirm'
     | '/dashboard/ai-performance'
+    | '/dashboard/admin/agents'
+    | '/dashboard/admin/specialists'
     | '/dashboard/admin/users'
   fileRoutesById: FileRoutesById
 }
@@ -149,6 +174,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminUsersRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/admin/specialists': {
+      id: '/dashboard/admin/specialists'
+      path: '/admin/specialists'
+      fullPath: '/dashboard/admin/specialists'
+      preLoaderRoute: typeof DashboardAdminSpecialistsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/agents': {
+      id: '/dashboard/admin/agents'
+      path: '/admin/agents'
+      fullPath: '/dashboard/admin/agents'
+      preLoaderRoute: typeof DashboardAdminAgentsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
@@ -164,11 +203,15 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface DashboardRouteChildren {
   DashboardAiPerformanceRoute: typeof DashboardAiPerformanceRoute
+  DashboardAdminAgentsRoute: typeof DashboardAdminAgentsRoute
+  DashboardAdminSpecialistsRoute: typeof DashboardAdminSpecialistsRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAiPerformanceRoute: DashboardAiPerformanceRoute,
+  DashboardAdminAgentsRoute: DashboardAdminAgentsRoute,
+  DashboardAdminSpecialistsRoute: DashboardAdminSpecialistsRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
 }
 
@@ -184,3 +227,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
