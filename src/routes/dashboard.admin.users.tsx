@@ -150,6 +150,33 @@ function AdminUsersPage() {
           </Button>
         </div>
 
+        <div className="mb-6 grid gap-3 sm:grid-cols-2">
+          <Link
+            to="/dashboard/admin/agents"
+            className="group flex items-center gap-3 rounded-xl border border-border/60 bg-card p-4 shadow-soft transition-all hover:border-primary/40 hover:shadow-elevated"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-soft text-primary">
+              <Stethoscope className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-medium">Agents de santé</p>
+              <p className="text-xs text-muted-foreground">Gérer et créer des comptes agents</p>
+            </div>
+          </Link>
+          <Link
+            to="/dashboard/admin/specialists"
+            className="group flex items-center gap-3 rounded-xl border border-border/60 bg-card p-4 shadow-soft transition-all hover:border-primary/40 hover:shadow-elevated"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success-soft text-success">
+              <Activity className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-medium">Spécialistes</p>
+              <p className="text-xs text-muted-foreground">Gérer et créer des comptes spécialistes</p>
+            </div>
+          </Link>
+        </div>
+
         <div className="rounded-xl border border-border/60 bg-card shadow-soft">
           <div className="grid grid-cols-12 gap-3 border-b border-border/60 px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             <div className="col-span-3">{t("admin.users.user")}</div>
