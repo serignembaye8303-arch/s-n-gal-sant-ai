@@ -264,15 +264,27 @@ function CreateForm({
   const [phone, setPhone] = useState("");
   const [facility, setFacility] = useState("");
   const [password, setPassword] = useState("");
+  const [autoPassword, setAutoPassword] = useState(false);
+  const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const generatePassword = () => {
+    const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%";
+    const arr = new Uint32Array(14);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, (n) => chars[n % chars.length]).join("");
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    const finalPassword = autoPassword ? generatePassword() : password;
     try {
       await createUser({
-        data: { full_name: fullName, email, phone, facility, password, role: scopedRole },
+        data: { full_name: fullName, email, phone, facility, password: finalPassword, role: scopedRole },
       });
-      toast.success("Compte créé avec succès");
+      toast.success("Compte créé — aucun email envoyé");
+      setCreatedInfo({ email, password: finalPassword });
       setFullName(""); setEmail(""); setPhone(""); setFacility(""); setPassword("");
       await onCreated();
     } catch (err) {
@@ -282,29 +294,81 @@ function CreateForm({
     }
   };
 
+  const copyCreds = async () => {
+    if (!createdInfo) return;
+    await navigator.clipboard.writeText(`Email: ${createdInfo.email}\nMot de passe: ${createdInfo.password}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const roleLabel = scopedRole === "specialist" ? "spécialiste" : "agent de santé";
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card p-6 shadow-soft">
-      <h2 className="mb-1 font-display text-lg font-semibold">Nouveau compte {roleLabel}</h2>
-      <p className="mb-6 text-sm text-muted-foreground">
-        Le rôle <span className="font-medium text-foreground">{roleLabel}</span> est attribué automatiquement.
-      </p>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField id="r-fullname" label="Nom complet" value={fullName} onChange={setFullName} required maxLength={100} />
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <FormField id="r-email" label="Email" type="email" value={email} onChange={setEmail} required maxLength={255} />
-          <FormField id="r-phone" label="Téléphone" type="tel" value={phone} onChange={setPhone} maxLength={30} />
+    <div className="space-y-4">
+      {createdInfo && (
+        <div className="rounded-xl border border-success/40 bg-success-soft/40 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-medium text-sm">Compte créé sans email d'invitation</p>
+              <p className="mt-1 text-xs text-muted-foreground">Transmettez ces identifiants au nouvel utilisateur :</p>
+              <div className="mt-2 space-y-1 font-mono text-sm">
+                <div><span className="text-muted-foreground">Email :</span> {createdInfo.email}</div>
+                <div><span className="text-muted-foreground">Mot de passe :</span> {createdInfo.password}</div>
+              </div>
+            </div>
+            <Button type="button" size="sm" variant="outline" onClick={copyCreds} className="gap-1.5 shrink-0">
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? "Copié" : "Copier"}
+            </Button>
+          </div>
+          <button onClick={() => setCreatedInfo(null)} className="mt-3 text-xs text-muted-foreground hover:text-foreground underline">
+            Fermer
+          </button>
         </div>
-        <FormField id="r-facility" label="Centre de santé" value={facility} onChange={setFacility} maxLength={150} />
-        <FormField id="r-password" label="Mot de passe initial" type="password" value={password} onChange={setPassword} required minLength={8} maxLength={72} />
-        <div className="flex justify-end">
-          <Button type="submit" disabled={submitting} className="gap-1.5">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Créer le compte
-          </Button>
+      )}
+
+      <div className="rounded-xl border border-border/60 bg-card p-6 shadow-soft">
+        <h2 className="mb-1 font-display text-lg font-semibold">Nouveau compte {roleLabel}</h2>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Le rôle <span className="font-medium text-foreground">{roleLabel}</span> est attribué automatiquement.
+        </p>
+
+        <div className="mb-5 flex items-start gap-3 rounded-lg border border-border/60 bg-muted/40 p-3">
+          <MailX className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Création directe sans email.</span>{" "}
+            Le compte est activé immédiatement. Aucun email d'invitation n'est envoyé — vous devrez transmettre les identifiants à l'utilisateur.
+          </div>
         </div>
-      </form>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormField id="r-fullname" label="Nom complet" value={fullName} onChange={setFullName} required maxLength={100} />
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <FormField id="r-email" label="Email" type="email" value={email} onChange={setEmail} required maxLength={255} />
+            <FormField id="r-phone" label="Téléphone" type="tel" value={phone} onChange={setPhone} maxLength={30} />
+          </div>
+          <FormField id="r-facility" label="Centre de santé" value={facility} onChange={setFacility} maxLength={150} />
+
+          <div className="flex items-center justify-between rounded-lg border border-border/60 p-3">
+            <div>
+              <Label htmlFor="r-autopw" className="text-sm font-medium">Générer un mot de passe automatiquement</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">Un mot de passe sécurisé sera créé et affiché après validation.</p>
+            </div>
+            <Switch id="r-autopw" checked={autoPassword} onCheckedChange={setAutoPassword} />
+          </div>
+
+          {!autoPassword && (
+            <FormField id="r-password" label="Mot de passe initial" type="password" value={password} onChange={setPassword} required minLength={8} maxLength={72} />
+          )}
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={submitting} className="gap-1.5">
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Créer le compte
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
