@@ -2,35 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { assertAdmin, logAction } from "@/lib/admin.server";
 
 const ROLES = ["admin", "specialist", "agent"] as const;
 type Role = (typeof ROLES)[number];
 
 const STATUSES = ["active", "suspended", "disabled"] as const;
 type Status = (typeof STATUSES)[number];
-
-async function assertAdmin(userId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Forbidden: admin role required");
-}
-
-async function logAction(actorId: string, action: string, targetUserId: string | null, targetEmail: string | null, details: Record<string, unknown> = {}) {
-  const { data: actor } = await supabaseAdmin.auth.admin.getUserById(actorId);
-  await supabaseAdmin.from("admin_audit_logs").insert({
-    actor_id: actorId,
-    actor_email: actor?.user?.email ?? null,
-    action,
-    target_user_id: targetUserId,
-    target_email: targetEmail,
-    details: details as never,
-  });
-}
 
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
