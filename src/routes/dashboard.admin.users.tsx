@@ -40,7 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { listUsers, setUserRole, createUser, updateUser, deleteUser } from "@/server/admin.functions";
+import { listUsers, setUserRole, createUser, updateUser, deleteUser } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/dashboard/admin/users")({
   component: AdminUsersPage,

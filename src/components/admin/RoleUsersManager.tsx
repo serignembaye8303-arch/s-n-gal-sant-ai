@@ -43,7 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { listUsers, createUser, updateUser, deleteUser } from "@/server/admin.functions";
+import { listUsers, createUser, updateUser, deleteUser } from "@/lib/admin.functions";
 
 type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 type Status = "active" | "suspended" | "disabled";
