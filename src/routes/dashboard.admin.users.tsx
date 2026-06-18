@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type FormEvent } from "react";
 import { Activity, ArrowLeft, Loader2, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
@@ -53,6 +54,9 @@ function AdminUsersPage() {
   const { user, role, loading } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+  const listUsersFn = useServerFn(listUsers);
+  const setUserRoleFn = useServerFn(setUserRole);
+  const deleteUserFn = useServerFn(deleteUser);
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -68,7 +72,7 @@ function AdminUsersPage() {
   const refresh = async () => {
     setLoadingList(true);
     try {
-      const data = await listUsers();
+      const data = await listUsersFn();
       setUsers(data);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erreur");
@@ -84,7 +88,7 @@ function AdminUsersPage() {
   const handleRoleChange = async (userId: string, newRole: AppRole) => {
     setUpdatingId(userId);
     try {
-      await setUserRole({ data: { user_id: userId, role: newRole } });
+      await setUserRoleFn({ data: { user_id: userId, role: newRole } });
       toast.success("Rôle mis à jour");
       await refresh();
     } catch (e) {
@@ -97,7 +101,7 @@ function AdminUsersPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await deleteUser({ data: { user_id: deleteTarget.id } });
+      await deleteUserFn({ data: { user_id: deleteTarget.id } });
       toast.success("Utilisateur supprimé");
       setDeleteTarget(null);
       await refresh();
@@ -302,6 +306,7 @@ function CreateUserDialog({
   onOpenChange: (o: boolean) => void;
   onCreated: () => void;
 }) {
+  const createUserFn = useServerFn(createUser);
   const [submitting, setSubmitting] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -318,7 +323,7 @@ function CreateUserDialog({
     e.preventDefault();
     setSubmitting(true);
     try {
-      await createUser({
+      await createUserFn({
         data: { full_name: fullName, email, phone, facility, password, role },
       });
       toast.success("Utilisateur créé");
@@ -381,6 +386,7 @@ function EditUserDialog({
   onOpenChange: (o: boolean) => void;
   onSaved: () => void;
 }) {
+  const updateUserFn = useServerFn(updateUser);
   const [submitting, setSubmitting] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -403,7 +409,7 @@ function EditUserDialog({
     if (!target) return;
     setSubmitting(true);
     try {
-      await updateUser({
+      await updateUserFn({
         data: {
           user_id: target.id,
           full_name: fullName,
