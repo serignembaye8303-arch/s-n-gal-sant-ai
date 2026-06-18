@@ -163,14 +163,16 @@ export async function createManagedUser(actorId: string, data: CreateManagedUser
     .insert({ user_id: newId, role: data.role });
   if (roleError) throw new Error(roleError.message);
 
-  await supabaseAdmin
+  const { error: profileError } = await supabaseAdmin
     .from("profiles")
-    .update({
+    .upsert({
+      id: newId,
       full_name: data.full_name,
       phone: data.phone,
       facility: data.facility,
-    })
-    .eq("id", newId);
+      status: "active",
+    });
+  if (profileError) throw new Error(profileError.message);
 
   await logAction(actorId, "user.create", newId, data.email, { role: data.role });
   return { ok: true, id: newId };
