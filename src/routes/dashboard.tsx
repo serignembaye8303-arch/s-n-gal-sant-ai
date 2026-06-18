@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Activity, LogOut, UserPlus, Users, Stethoscope, ShieldCheck, Brain, FileText, MessageSquare, Building2, BarChart3, Loader2, Clock, CheckCircle2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -16,8 +16,11 @@ function DashboardPage() {
   const { user, role, loading, signOut } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isDashboardHome = location.pathname === "/dashboard";
 
   useEffect(() => {
+    if (!isDashboardHome) return;
     if (!loading && !user) {
       navigate({ to: "/auth" });
     } else if (!loading && user && role === "admin") {
@@ -25,7 +28,11 @@ function DashboardPage() {
     } else if (!loading && user && role === "specialist") {
       navigate({ to: "/dashboard/ai-performance" });
     }
-  }, [user, role, loading, navigate]);
+  }, [user, role, loading, navigate, isDashboardHome]);
+
+  if (!isDashboardHome) {
+    return <Outlet />;
+  }
 
   if (loading || !user) {
     return (
