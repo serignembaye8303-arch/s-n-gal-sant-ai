@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { Activity, ArrowLeft, Loader2, Plus, Pencil, Trash2, MoreVertical, ShieldCheck, Stethoscope } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -58,6 +59,8 @@ export function RoleUsersManager({ scopedRole, title, intro }: Props) {
   const { user, role, loading } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+  const listUsersFn = useServerFn(listUsers);
+  const deleteUserFn = useServerFn(deleteUser);
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [tab, setTab] = useState<"list" | "create">("list");
@@ -72,7 +75,7 @@ export function RoleUsersManager({ scopedRole, title, intro }: Props) {
   const refresh = async () => {
     setLoadingList(true);
     try {
-      const data = await listUsers();
+      const data = await listUsersFn();
       setUsers(data.filter((u) => u.primary_role === scopedRole));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erreur");
@@ -89,7 +92,7 @@ export function RoleUsersManager({ scopedRole, title, intro }: Props) {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await deleteUser({ data: { user_id: deleteTarget.id } });
+      await deleteUserFn({ data: { user_id: deleteTarget.id } });
       toast.success("Utilisateur supprimé");
       setDeleteTarget(null);
       await refresh();
@@ -258,6 +261,7 @@ function CreateForm({
   scopedRole: Extract<AppRole, "agent" | "specialist">;
   onCreated: () => void | Promise<void>;
 }) {
+  const createUserFn = useServerFn(createUser);
   const [submitting, setSubmitting] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -280,7 +284,7 @@ function CreateForm({
     setSubmitting(true);
     const finalPassword = autoPassword ? generatePassword() : password;
     try {
-      await createUser({
+      await createUserFn({
         data: { full_name: fullName, email, phone, facility, password: finalPassword, role: scopedRole },
       });
       toast.success("Compte créé — aucun email envoyé");
@@ -382,6 +386,7 @@ function EditUserDialog({
   onOpenChange: (o: boolean) => void;
   onSaved: () => void;
 }) {
+  const updateUserFn = useServerFn(updateUser);
   const [submitting, setSubmitting] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -402,7 +407,7 @@ function EditUserDialog({
     if (!target) return;
     setSubmitting(true);
     try {
-      await updateUser({
+      await updateUserFn({
         data: { user_id: target.id, full_name: fullName, phone, facility, status },
       });
       toast.success("Utilisateur mis à jour");
