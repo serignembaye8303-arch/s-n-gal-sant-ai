@@ -1,13 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import {
-  createManagedUser,
-  deleteManagedUser,
-  listUsersForAdmin,
-  setUserRoleForAdmin,
-  updateManagedUser,
-} from "@/lib/admin.server";
 
 const ROLES = ["admin", "specialist", "agent"] as const;
 const STATUSES = ["active", "suspended", "disabled"] as const;
@@ -42,6 +35,7 @@ const deleteUserSchema = z.object({
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { listUsersForAdmin } = await import("@/lib/admin.server");
     return listUsersForAdmin(context.userId);
   });
 
@@ -49,6 +43,7 @@ export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => setRoleSchema.parse(data))
   .handler(async ({ context, data }) => {
+    const { setUserRoleForAdmin } = await import("@/lib/admin.server");
     return setUserRoleForAdmin(context.userId, data.user_id, data.role);
   });
 
@@ -56,6 +51,7 @@ export const createUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => createUserSchema.parse(data))
   .handler(async ({ context, data }) => {
+    const { createManagedUser } = await import("@/lib/admin.server");
     return createManagedUser(context.userId, data);
   });
 
@@ -63,6 +59,7 @@ export const updateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => updateUserSchema.parse(data))
   .handler(async ({ context, data }) => {
+    const { updateManagedUser } = await import("@/lib/admin.server");
     return updateManagedUser(context.userId, data);
   });
 
@@ -70,5 +67,6 @@ export const deleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => deleteUserSchema.parse(data))
   .handler(async ({ context, data }) => {
+    const { deleteManagedUser } = await import("@/lib/admin.server");
     return deleteManagedUser(context.userId, data.user_id);
   });
