@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export type AdminRole = "admin" | "specialist" | "agent";
+export type AdminRole = "admin" | "specialiste" | "agent";
 export type AdminStatus = "active" | "suspended" | "disabled";
 
 export interface AdminUserRow {
@@ -100,8 +100,8 @@ export async function listUsersForAdmin(actorId: string): Promise<AdminUserRow[]
     const userRoles = rolesByUser.get(p.id) ?? [];
     const primary: AdminRole = userRoles.includes("admin")
       ? "admin"
-      : userRoles.includes("specialist")
-        ? "specialist"
+      : userRoles.includes("specialiste")
+        ? "specialiste"
         : "agent";
 
     return {

@@ -8,7 +8,7 @@ export const Route = createFileRoute("/dashboard/admin/specialists")({
 function SpecialistsPage() {
   return (
     <RoleUsersManager
-      scopedRole="specialist"
+      scopedRole="specialiste"
       title="Spécialistes"
       intro="Gérez les comptes des spécialistes médicaux : créez, modifiez ou suspendez leurs accès."
     />

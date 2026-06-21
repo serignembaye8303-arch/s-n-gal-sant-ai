@@ -47,7 +47,7 @@ export const validateAIDiagnostic = createServerFn({ method: "POST" })
       .select("role")
       .eq("user_id", context.userId);
     const allowed = (roles ?? []).some(
-      (r) => r.role === "specialist" || r.role === "admin",
+      (r) => r.role === "specialiste" || r.role === "admin",
     );
     if (!allowed) throw new Error("Forbidden");
 

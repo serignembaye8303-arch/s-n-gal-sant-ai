@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertAdmin, logAction } from "@/lib/admin.server";
 
-const ROLES = ["admin", "specialist", "agent"] as const;
+const ROLES = ["admin", "specialiste", "agent"] as const;
 type Role = (typeof ROLES)[number];
 
 const STATUSES = ["active", "suspended", "disabled"] as const;
@@ -47,8 +47,8 @@ export const listUsers = createServerFn({ method: "GET" })
       const userRoles = rolesByUser.get(p.id) ?? [];
       const primary: Role = userRoles.includes("admin")
         ? "admin"
-        : userRoles.includes("specialist")
-        ? "specialist"
+        : userRoles.includes("specialiste")
+        ? "specialiste"
         : "agent";
       return {
         id: p.id,

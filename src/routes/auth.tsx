@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { Activity, Loader2 } from "lucide-react";
+import { Activity, Loader2, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -21,25 +21,13 @@ const signInSchema = z.object({
   password: z.string().min(6).max(72),
 });
 
-const signUpSchema = signInSchema.extend({
-  fullName: z.string().trim().min(2).max(100),
-  phone: z.string().trim().max(30).optional(),
-  facility: z.string().trim().max(150).optional(),
-});
-
 function AuthPage() {
   const { t } = useI18n();
   const { user, loading, role } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [submitting, setSubmitting] = useState(false);
-
-  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [facility, setFacility] = useState("");
 
   useEffect(() => {
     if (!loading && user) {
@@ -52,44 +40,33 @@ function AuthPage() {
     setSubmitting(true);
 
     try {
-      if (mode === "signin") {
-        const parsed = signInSchema.safeParse({ email, password });
-        if (!parsed.success) {
-          toast.error(t("auth.error.generic"));
-          return;
-        }
-        const { data: signInData, error } = await supabase.auth.signInWithPassword(parsed.data);
-        if (error || !signInData.user) {
-          toast.error(t("auth.error.invalid"));
-          return;
-        }
-        const targetRole = await fetchPrimaryRole(signInData.user.id);
-        navigate({ to: roleHomePath(targetRole) });
-      } else {
-        const parsed = signUpSchema.safeParse({ email, password, fullName, phone, facility });
-        if (!parsed.success) {
-          toast.error(t("auth.error.generic"));
-          return;
-        }
-        const { error } = await supabase.auth.signUp({
-          email: parsed.data.email,
-          password: parsed.data.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: {
-              full_name: parsed.data.fullName,
-              phone: parsed.data.phone ?? "",
-              facility: parsed.data.facility ?? "",
-            },
-          },
-        });
-        if (error) {
-          toast.error(error.message || t("auth.error.generic"));
-          return;
-        }
-        toast.success(t("auth.success.signup"));
-        navigate({ to: "/dashboard" });
+      const parsed = signInSchema.safeParse({ email, password });
+      if (!parsed.success) {
+        toast.error(t("auth.error.generic"));
+        return;
       }
+
+      const { data: signInData, error } = await supabase.auth.signInWithPassword(parsed.data);
+      if (error || !signInData.user) {
+        toast.error(t("auth.error.invalid"));
+        return;
+      }
+
+      // Vérifier le statut actif du profil
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", signInData.user.id)
+        .maybeSingle();
+
+      if (profile && profile.status !== "active") {
+        await supabase.auth.signOut();
+        toast.error("Votre compte est suspendu. Contactez l'administrateur.");
+        return;
+      }
+
+      const targetRole = await fetchPrimaryRole(signInData.user.id);
+      navigate({ to: roleHomePath(targetRole) });
     } finally {
       setSubmitting(false);
     }
@@ -114,31 +91,18 @@ function AuthPage() {
         <div className="w-full max-w-md">
           <div className="rounded-2xl border border-border/60 bg-card p-8 shadow-elevated">
             <div className="mb-6 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
               <h1 className="font-display text-2xl font-semibold tracking-tight">
-                {mode === "signin" ? t("auth.signin.title") : t("auth.signup.title")}
+                Connexion sécurisée
               </h1>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                {mode === "signin" ? t("auth.signin.subtitle") : t("auth.signup.subtitle")}
+                Espace réservé aux professionnels de santé autorisés.
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "signup" && (
-                <>
-                  <Field
-                    id="fullName"
-                    label={t("auth.fullname")}
-                    value={fullName}
-                    onChange={setFullName}
-                    required
-                    maxLength={100}
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field id="phone" label={t("auth.phone")} value={phone} onChange={setPhone} maxLength={30} type="tel" />
-                    <Field id="facility" label={t("auth.facility")} value={facility} onChange={setFacility} maxLength={150} />
-                  </div>
-                </>
-              )}
               <Field
                 id="email"
                 label={t("auth.email")}
@@ -162,21 +126,18 @@ function AuthPage() {
               <Button type="submit" disabled={submitting} className="h-11 w-full">
                 {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
-                ) : mode === "signin" ? (
-                  t("auth.signin.button")
                 ) : (
-                  t("auth.signup.button")
+                  t("auth.signin.button")
                 )}
               </Button>
             </form>
 
-            <button
-              type="button"
-              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-              className="mt-6 block w-full text-center text-sm text-muted-foreground transition-colors hover:text-primary"
-            >
-              {mode === "signin" ? t("auth.toggle.signup") : t("auth.toggle.signin")}
-            </button>
+            <div className="mt-6 rounded-lg border border-border/60 bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                <span className="font-medium text-foreground">Pas d'auto-inscription.</span>{" "}
+                Les comptes sont créés exclusivement par l'administrateur. Si vous avez besoin d'un accès, contactez votre établissement.
+              </p>
+            </div>
           </div>
         </div>
       </main>
