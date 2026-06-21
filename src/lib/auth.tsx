@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export type AppRole = "admin" | "specialiste" | "agent";
 
@@ -21,6 +22,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Contrôle strict du statut du compte.
+   * Renvoie true si le compte est actif, sinon force la déconnexion.
+   */
+  const enforceActiveStatus = async (uid: string): Promise<boolean> => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", uid)
+      .maybeSingle();
+    if (data && data.status !== "active") {
+      await supabase.auth.signOut();
+      setSession(null);
+      setUser(null);
+      setRole(null);
+      toast.error("Votre compte n'est pas actif. Contactez l'administrateur.");
+      return false;
+    }
+    return true;
+  };
+
   const loadRole = async (uid: string) => {
     const { data } = await supabase
       .from("user_roles")
@@ -32,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRole(null);
       return;
     }
-    // Priorité : admin > specialist > agent
     const roles = data.map((r) => r.role as AppRole);
     if (roles.includes("admin")) setRole("admin");
     else if (roles.includes("specialiste")) setRole("specialiste");
@@ -41,26 +62,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // 1. Listener d'abord
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
+        const uid = newSession.user.id;
         // defer pour éviter deadlock
-        setTimeout(() => loadRole(newSession.user.id), 0);
+        setTimeout(async () => {
+          const active = await enforceActiveStatus(uid);
+          if (active) await loadRole(uid);
+        }, 0);
       } else {
         setRole(null);
       }
     });
 
     // 2. Puis getSession
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        loadRole(s.user.id).finally(() => setLoading(false));
-      } else {
-        setLoading(false);
+        const active = await enforceActiveStatus(s.user.id);
+        if (active) await loadRole(s.user.id);
       }
+      setLoading(false);
     });
 
     return () => sub.subscription.unsubscribe();
