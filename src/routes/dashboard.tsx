@@ -219,6 +219,7 @@ function AdminDashboard() {
         <ActionCard title="Agents de santé" icon={Stethoscope} to="/dashboard/admin/agents" />
         <ActionCard title="Spécialistes" icon={Activity} to="/dashboard/admin/specialists" />
         <ActionCard title={t("aiperf.nav")} icon={BarChart3} to="/dashboard/ai-performance" />
+        <ActionCard title="Permissions & accès" icon={ShieldCheck} to="/dashboard/admin/permissions" />
         <ActionCard title={t("dashboard.admin.facilities")} icon={Building2} />
         <ActionCard title={t("dashboard.admin.activity")} icon={BarChart3} />
       </div>

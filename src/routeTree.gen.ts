@@ -16,6 +16,7 @@ import { Route as DashboardAiPerformanceRouteImport } from './routes/dashboard.a
 import { Route as AuthConfirmRouteImport } from './routes/auth.confirm'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
 import { Route as DashboardAdminSpecialistsRouteImport } from './routes/dashboard.admin.specialists'
+import { Route as DashboardAdminPermissionsRouteImport } from './routes/dashboard.admin.permissions'
 import { Route as DashboardAdminAgentsRouteImport } from './routes/dashboard.admin.agents'
 
 const DashboardRoute = DashboardRouteImport.update({
@@ -54,6 +55,12 @@ const DashboardAdminSpecialistsRoute =
     path: '/admin/specialists',
     getParentRoute: () => DashboardRoute,
   } as any)
+const DashboardAdminPermissionsRoute =
+  DashboardAdminPermissionsRouteImport.update({
+    id: '/admin/permissions',
+    path: '/admin/permissions',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardAdminAgentsRoute = DashboardAdminAgentsRouteImport.update({
   id: '/admin/agents',
   path: '/admin/agents',
@@ -67,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/auth/confirm': typeof AuthConfirmRoute
   '/dashboard/ai-performance': typeof DashboardAiPerformanceRoute
   '/dashboard/admin/agents': typeof DashboardAdminAgentsRoute
+  '/dashboard/admin/permissions': typeof DashboardAdminPermissionsRoute
   '/dashboard/admin/specialists': typeof DashboardAdminSpecialistsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
@@ -77,6 +85,7 @@ export interface FileRoutesByTo {
   '/auth/confirm': typeof AuthConfirmRoute
   '/dashboard/ai-performance': typeof DashboardAiPerformanceRoute
   '/dashboard/admin/agents': typeof DashboardAdminAgentsRoute
+  '/dashboard/admin/permissions': typeof DashboardAdminPermissionsRoute
   '/dashboard/admin/specialists': typeof DashboardAdminSpecialistsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
@@ -88,6 +97,7 @@ export interface FileRoutesById {
   '/auth/confirm': typeof AuthConfirmRoute
   '/dashboard/ai-performance': typeof DashboardAiPerformanceRoute
   '/dashboard/admin/agents': typeof DashboardAdminAgentsRoute
+  '/dashboard/admin/permissions': typeof DashboardAdminPermissionsRoute
   '/dashboard/admin/specialists': typeof DashboardAdminSpecialistsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/auth/confirm'
     | '/dashboard/ai-performance'
     | '/dashboard/admin/agents'
+    | '/dashboard/admin/permissions'
     | '/dashboard/admin/specialists'
     | '/dashboard/admin/users'
   fileRoutesByTo: FileRoutesByTo
@@ -110,6 +121,7 @@ export interface FileRouteTypes {
     | '/auth/confirm'
     | '/dashboard/ai-performance'
     | '/dashboard/admin/agents'
+    | '/dashboard/admin/permissions'
     | '/dashboard/admin/specialists'
     | '/dashboard/admin/users'
   id:
@@ -120,6 +132,7 @@ export interface FileRouteTypes {
     | '/auth/confirm'
     | '/dashboard/ai-performance'
     | '/dashboard/admin/agents'
+    | '/dashboard/admin/permissions'
     | '/dashboard/admin/specialists'
     | '/dashboard/admin/users'
   fileRoutesById: FileRoutesById
@@ -181,6 +194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminSpecialistsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/admin/permissions': {
+      id: '/dashboard/admin/permissions'
+      path: '/admin/permissions'
+      fullPath: '/dashboard/admin/permissions'
+      preLoaderRoute: typeof DashboardAdminPermissionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/admin/agents': {
       id: '/dashboard/admin/agents'
       path: '/admin/agents'
@@ -204,6 +224,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 interface DashboardRouteChildren {
   DashboardAiPerformanceRoute: typeof DashboardAiPerformanceRoute
   DashboardAdminAgentsRoute: typeof DashboardAdminAgentsRoute
+  DashboardAdminPermissionsRoute: typeof DashboardAdminPermissionsRoute
   DashboardAdminSpecialistsRoute: typeof DashboardAdminSpecialistsRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
 }
@@ -211,6 +232,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAiPerformanceRoute: DashboardAiPerformanceRoute,
   DashboardAdminAgentsRoute: DashboardAdminAgentsRoute,
+  DashboardAdminPermissionsRoute: DashboardAdminPermissionsRoute,
   DashboardAdminSpecialistsRoute: DashboardAdminSpecialistsRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
 }
