@@ -50,7 +50,7 @@ type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 type Status = "active" | "suspended" | "disabled";
 
 interface Props {
-  scopedRole: Extract<AppRole, "agent" | "specialist">;
+  scopedRole: Extract<AppRole, "agent" | "specialiste">;
   title: string;
   intro: string;
 }
@@ -109,7 +109,7 @@ export function RoleUsersManager({ scopedRole, title, intro }: Props) {
     );
   }
 
-  const Icon = scopedRole === "specialist" ? Activity : Stethoscope;
+  const Icon = scopedRole === "specialiste" ? Activity : Stethoscope;
 
   return (
     <div className="min-h-screen bg-background">
@@ -258,7 +258,7 @@ function CreateForm({
   scopedRole,
   onCreated,
 }: {
-  scopedRole: Extract<AppRole, "agent" | "specialist">;
+  scopedRole: Extract<AppRole, "agent" | "specialiste">;
   onCreated: () => void | Promise<void>;
 }) {
   const createUserFn = useServerFn(createUser);
@@ -305,7 +305,7 @@ function CreateForm({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const roleLabel = scopedRole === "specialist" ? "spécialiste" : "agent de santé";
+  const roleLabel = scopedRole === "specialiste" ? "spécialiste" : "agent de santé";
 
   return (
     <div className="space-y-4">

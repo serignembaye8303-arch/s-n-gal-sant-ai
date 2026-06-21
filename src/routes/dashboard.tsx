@@ -25,7 +25,7 @@ function DashboardPage() {
       navigate({ to: "/auth" });
     } else if (!loading && user && role === "admin") {
       navigate({ to: "/dashboard/admin/users" });
-    } else if (!loading && user && role === "specialist") {
+    } else if (!loading && user && role === "specialiste") {
       navigate({ to: "/dashboard/ai-performance" });
     }
   }, [user, role, loading, navigate, isDashboardHome]);
@@ -79,12 +79,12 @@ function DashboardPage() {
             </p>
             <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
               {role === "admin" && t("dashboard.admin.title")}
-              {role === "specialist" && t("dashboard.specialist.title")}
+              {role === "specialiste" && t("dashboard.specialist.title")}
               {(!role || role === "agent") && t("dashboard.agent.title")}
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               {role === "admin" && t("dashboard.admin.intro")}
-              {role === "specialist" && t("dashboard.specialist.intro")}
+              {role === "specialiste" && t("dashboard.specialist.intro")}
               {(!role || role === "agent") && t("dashboard.agent.intro")}
             </p>
           </div>
@@ -92,7 +92,7 @@ function DashboardPage() {
         </div>
 
         {role === "admin" && <AdminDashboard />}
-        {role === "specialist" && <SpecialistDashboard />}
+        {role === "specialiste" && <SpecialistDashboard />}
         {(!role || role === "agent") && <AgentDashboard />}
       </main>
     </div>

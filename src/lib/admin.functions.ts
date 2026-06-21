@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const ROLES = ["admin", "specialist", "agent"] as const;
+const ROLES = ["admin", "specialiste", "agent"] as const;
 const STATUSES = ["active", "suspended", "disabled"] as const;
 
 const setRoleSchema = z.object({

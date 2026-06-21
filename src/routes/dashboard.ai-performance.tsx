@@ -46,14 +46,14 @@ function AIPerformancePage() {
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
-    if (!loading && user && role && role !== "admin" && role !== "specialist") {
+    if (!loading && user && role && role !== "admin" && role !== "specialiste") {
       navigate({ to: "/dashboard" });
     }
   }, [loading, user, role, navigate]);
 
   // Initial load
   useEffect(() => {
-    if (!user || (role !== "admin" && role !== "specialist")) return;
+    if (!user || (role !== "admin" && role !== "specialiste")) return;
     const since = new Date(Date.now() - WINDOW_MS).toISOString();
     supabase
       .from("ai_diagnostics_logs")
@@ -75,7 +75,7 @@ function AIPerformancePage() {
 
   // Realtime subscription
   useEffect(() => {
-    if (!user || (role !== "admin" && role !== "specialist")) return;
+    if (!user || (role !== "admin" && role !== "specialiste")) return;
     const channel = supabase
       .channel("ai_diagnostics_logs_changes")
       .on(
@@ -110,7 +110,7 @@ function AIPerformancePage() {
 
   const kpis = useMemo(() => computeKpis(logs ?? []), [logs]);
 
-  if (loading || !user || (role !== "admin" && role !== "specialist")) {
+  if (loading || !user || (role !== "admin" && role !== "specialiste")) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

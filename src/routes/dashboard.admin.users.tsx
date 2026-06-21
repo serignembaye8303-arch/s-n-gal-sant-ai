@@ -235,7 +235,7 @@ function AdminUsersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="agent">{t("dashboard.role.agent")}</SelectItem>
-                          <SelectItem value="specialist">{t("dashboard.role.specialist")}</SelectItem>
+                          <SelectItem value="specialiste">{t("dashboard.role.specialist")}</SelectItem>
                           <SelectItem value="admin">{t("dashboard.role.admin")}</SelectItem>
                         </SelectContent>
                       </Select>
@@ -360,7 +360,7 @@ function CreateUserDialog({
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Administrateur</SelectItem>
-                <SelectItem value="specialist">Spécialiste</SelectItem>
+                <SelectItem value="specialiste">Spécialiste</SelectItem>
                 <SelectItem value="agent">Agent de santé</SelectItem>
               </SelectContent>
             </Select>
@@ -449,7 +449,7 @@ function EditUserDialog({
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Administrateur</SelectItem>
-                  <SelectItem value="specialist">Spécialiste</SelectItem>
+                  <SelectItem value="specialiste">Spécialiste</SelectItem>
                   <SelectItem value="agent">Agent de santé</SelectItem>
                 </SelectContent>
               </Select>
