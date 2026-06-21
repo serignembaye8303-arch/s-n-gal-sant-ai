@@ -103,7 +103,7 @@ function RoleBadge({ role }: { role: AppRole | null }) {
   const { t } = useI18n();
   const map: Record<string, { label: string; cls: string; icon: LucideIcon }> = {
     admin: { label: t("dashboard.role.admin"), cls: "bg-warning/15 text-warning-foreground border-warning/30", icon: ShieldCheck },
-    specialist: { label: t("dashboard.role.specialist"), cls: "bg-success-soft text-success border-success/30", icon: Activity },
+    specialiste: { label: t("dashboard.role.specialist"), cls: "bg-success-soft text-success border-success/30", icon: Activity },
     agent: { label: t("dashboard.role.agent"), cls: "bg-primary-soft text-primary border-primary/30", icon: Stethoscope },
   };
   const r = role ?? "agent";
