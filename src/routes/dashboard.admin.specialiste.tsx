@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { RoleUsersManager } from "@/components/admin/RoleUsersManager";
 
-export const Route = createFileRoute("/dashboard/admin/specialists")({
-  component: SpecialistsPage,
+export const Route = createFileRoute("/dashboard/admin/specialiste")({
+  component: SpecialistePage,
 });
 
-function SpecialistsPage() {
+function SpecialistePage() {
   return (
     <RoleUsersManager
       scopedRole="specialiste"

@@ -1,16 +1,35 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 export type AdminRole = "admin" | "specialiste" | "agent";
 export type AdminStatus = "active" | "suspended" | "disabled";
 
+const VALID_ROLES: AdminRole[] = ["admin", "specialiste", "agent"];
+
+function isAdminRole(role: unknown): role is AdminRole {
+  return typeof role === "string" && VALID_ROLES.includes(role as AdminRole);
+}
+
+function logAdminUsersError(stage: string, error: unknown, details: Record<string, unknown> = {}) {
+  console.error("[admin.users]", stage, {
+    ...details,
+    error,
+    message: error instanceof Error ? error.message : String(error),
+  });
+}
+
 export interface AdminUserRow {
   id: string;
   email: string;
+  nom: string;
   full_name: string;
   phone: string;
   facility: string;
+  statut: AdminStatus;
   status: AdminStatus;
   created_at: string;
+  role: AdminRole;
   roles: AdminRole[];
   primary_role: AdminRole;
 }
@@ -33,15 +52,19 @@ export interface UpdateManagedUserInput {
   status?: AdminStatus;
 }
 
-export async function assertAdmin(userId: string) {
-  const { data, error } = await supabaseAdmin
+export async function assertAdmin(userId: string, dbClient?: SupabaseClient<Database>) {
+  const db = dbClient ?? supabaseAdmin;
+  const { data, error } = await db
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
     .eq("role", "admin")
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    logAdminUsersError("assertAdmin", error, { userId, code: error.code, hint: error.hint });
+    throw new Error(`Vérification admin impossible: ${error.message}`);
+  }
   if (!data) throw new Error("Forbidden: admin role required");
 }
 
@@ -64,58 +87,90 @@ export async function logAction(
   });
 }
 
-export async function listUsersForAdmin(actorId: string): Promise<AdminUserRow[]> {
-  await assertAdmin(actorId);
+export async function listUsersForAdmin(
+  actorId: string,
+  dbClient?: SupabaseClient<Database>,
+): Promise<AdminUserRow[]> {
+  console.info("[admin.users] listUsersForAdmin:start", { actorId });
+  const db = dbClient ?? supabaseAdmin;
+  await assertAdmin(actorId, db);
 
-  const { data: profiles, error: pErr } = await supabaseAdmin
+  const { data: profiles, error: pErr } = await db
     .from("profiles")
     .select("id, full_name, phone, facility, status, created_at")
     .order("created_at", { ascending: false });
-  if (pErr) throw new Error(pErr.message);
+  if (pErr) {
+    logAdminUsersError("profiles.select", pErr, { code: pErr.code, hint: pErr.hint });
+    throw new Error(`Impossible de récupérer les profils utilisateurs: ${pErr.message}`);
+  }
 
-  const { data: rolesData, error: rErr } = await supabaseAdmin
+  const { data: rolesData, error: rErr } = await db
     .from("user_roles")
     .select("user_id, role");
-  if (rErr) throw new Error(rErr.message);
+  if (rErr) {
+    logAdminUsersError("user_roles.select", rErr, { code: rErr.code, hint: rErr.hint });
+    throw new Error(`Impossible de récupérer les rôles utilisateurs: ${rErr.message}`);
+  }
 
   const rolesByUser = new Map<string, AdminRole[]>();
   for (const r of rolesData ?? []) {
+    if (!isAdminRole(r.role)) {
+      logAdminUsersError("user_roles.invalid_role", new Error(`Rôle non autorisé: ${String(r.role)}`), {
+        user_id: r.user_id,
+        role: r.role,
+      });
+      continue;
+    }
     const arr = rolesByUser.get(r.user_id) ?? [];
-    arr.push(r.role as AdminRole);
+    arr.push(r.role);
     rolesByUser.set(r.user_id, arr);
   }
 
-  const { data: authList, error: aErr } = await supabaseAdmin.auth.admin.listUsers({
-    page: 1,
-    perPage: 1000,
-  });
-  if (aErr) throw new Error(aErr.message);
-
   const emailById = new Map<string, string>();
-  for (const u of authList.users) {
-    if (u.email) emailById.set(u.id, u.email);
+  try {
+    const { data: authList, error: aErr } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+    if (aErr) {
+      logAdminUsersError("auth.admin.listUsers", aErr);
+    } else {
+      for (const u of authList.users) {
+        if (u.email) emailById.set(u.id, u.email);
+      }
+    }
+  } catch (error) {
+    logAdminUsersError("auth.admin.listUsers.exception", error);
   }
 
-  return (profiles ?? []).map((p) => {
+  const rows = (profiles ?? []).map((p) => {
     const userRoles = rolesByUser.get(p.id) ?? [];
     const primary: AdminRole = userRoles.includes("admin")
       ? "admin"
       : userRoles.includes("specialiste")
         ? "specialiste"
         : "agent";
+    const status = (p.status ?? "active") as AdminStatus;
+    const nom = p.full_name ?? "";
 
     return {
       id: p.id,
       email: emailById.get(p.id) ?? "",
-      full_name: p.full_name ?? "",
+      nom,
+      full_name: nom,
       phone: p.phone ?? "",
       facility: p.facility ?? "",
-      status: (p.status ?? "active") as AdminStatus,
+      statut: status,
+      status,
       created_at: p.created_at,
+      role: primary,
       roles: userRoles,
       primary_role: primary,
     };
   });
+
+  console.info("[admin.users] listUsersForAdmin:success", { count: rows.length });
+  return rows;
 }
 
 export async function setUserRoleForAdmin(actorId: string, userId: string, role: AdminRole) {

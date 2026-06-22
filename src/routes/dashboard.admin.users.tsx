@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type FormEvent } from "react";
-import { Activity, ArrowLeft, Loader2, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, Loader2, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -45,10 +45,74 @@ import { listUsers, setUserRole, createUser, updateUser, deleteUser } from "@/li
 
 export const Route = createFileRoute("/dashboard/admin/users")({
   component: AdminUsersPage,
+  errorComponent: AdminUsersRouteError,
 });
 
 type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 type Status = "active" | "suspended" | "disabled";
+
+function describeError(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "Erreur inconnue";
+  }
+}
+
+function AdminUsersRouteError({ error, reset }: { error: Error; reset: () => void }) {
+  console.error("[dashboard/admin/users] Route render error", error);
+  return (
+    <AdminUsersErrorView
+      title="Erreur de chargement des utilisateurs"
+      message={describeError(error)}
+      details={error.stack ?? describeError(error)}
+      onRetry={reset}
+    />
+  );
+}
+
+function AdminUsersErrorView({
+  title,
+  message,
+  details,
+  onRetry,
+}: {
+  title: string;
+  message: string;
+  details?: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto flex min-h-screen max-w-3xl items-center px-4 py-10">
+        <div className="w-full rounded-xl border border-destructive/30 bg-card p-6 shadow-soft">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+              <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+              {details && (
+                <pre className="mt-4 max-h-72 overflow-auto rounded-lg border border-border/60 bg-muted/50 p-3 text-xs text-muted-foreground whitespace-pre-wrap">
+                  {details}
+                </pre>
+              )}
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button type="button" onClick={onRetry}>Réessayer</Button>
+                <Button type="button" variant="outline" asChild>
+                  <Link to="/dashboard">Retour au dashboard</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
 
 function AdminUsersPage() {
   const { user, role, loading } = useAuth();
@@ -59,6 +123,7 @@ function AdminUsersPage() {
   const deleteUserFn = useServerFn(deleteUser);
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [loadingList, setLoadingList] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<UserRow | null>(null);
@@ -71,11 +136,21 @@ function AdminUsersPage() {
 
   const refresh = async () => {
     setLoadingList(true);
+    setListError(null);
     try {
+      console.info("[dashboard/admin/users] listUsers:start", { role, userId: user?.id });
       const data = await listUsersFn();
+      console.info("[dashboard/admin/users] listUsers:success", {
+        count: data.length,
+        columns: ["id", "nom", "email", "role", "statut", "created_at"],
+      });
       setUsers(data);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur");
+      const message = describeError(e);
+      console.error("[dashboard/admin/users] listUsers:error", e);
+      setListError(message);
+      setUsers([]);
+      toast.error(message);
     } finally {
       setLoadingList(false);
     }
@@ -92,7 +167,8 @@ function AdminUsersPage() {
       toast.success("Rôle mis à jour");
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur");
+      console.error("[dashboard/admin/users] setUserRole:error", e);
+      toast.error(describeError(e));
     } finally {
       setUpdatingId(null);
     }
@@ -106,7 +182,8 @@ function AdminUsersPage() {
       setDeleteTarget(null);
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur");
+      console.error("[dashboard/admin/users] deleteUser:error", e);
+      toast.error(describeError(e));
     }
   };
 
@@ -168,7 +245,7 @@ function AdminUsersPage() {
             </div>
           </Link>
           <Link
-            to="/dashboard/admin/specialists"
+            to="/dashboard/admin/specialiste"
             className="group flex items-center gap-3 rounded-xl border border-border/60 bg-card p-4 shadow-soft transition-all hover:border-primary/40 hover:shadow-elevated"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success-soft text-success">
@@ -190,7 +267,25 @@ function AdminUsersPage() {
             <div className="col-span-12 md:col-span-3 text-right">Actions</div>
           </div>
 
-          {loadingList ? (
+          {listError ? (
+            <div className="p-5">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-destructive">Impossible de charger les utilisateurs</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{listError}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Colonnes attendues : id, nom, email, role, statut, created_at.
+                    </p>
+                    <Button type="button" variant="outline" size="sm" onClick={refresh} className="mt-3">
+                      Réessayer
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : loadingList ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
@@ -235,7 +330,7 @@ function AdminUsersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="agent">{t("dashboard.role.agent")}</SelectItem>
-                          <SelectItem value="specialiste">{t("dashboard.role.specialist")}</SelectItem>
+                          <SelectItem value="specialiste">{t("dashboard.role.specialiste")}</SelectItem>
                           <SelectItem value="admin">{t("dashboard.role.admin")}</SelectItem>
                         </SelectContent>
                       </Select>
@@ -497,7 +592,7 @@ function RoleBadgeInline({ role }: { role: AppRole }) {
   const { t } = useI18n();
   const map = {
     admin: { label: t("dashboard.role.admin"), cls: "bg-warning/15 text-warning-foreground border-warning/30", Icon: ShieldCheck },
-    specialiste: { label: t("dashboard.role.specialist"), cls: "bg-success-soft text-success border-success/30", Icon: Activity },
+    specialiste: { label: t("dashboard.role.specialiste"), cls: "bg-success-soft text-success border-success/30", Icon: Activity },
     agent: { label: t("dashboard.role.agent"), cls: "bg-primary-soft text-primary border-primary/30", Icon: Stethoscope },
   } as const;
   const { label, cls, Icon } = map[role];

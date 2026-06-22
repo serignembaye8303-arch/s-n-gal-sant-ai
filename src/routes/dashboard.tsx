@@ -79,12 +79,12 @@ function DashboardPage() {
             </p>
             <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight md:text-4xl">
               {role === "admin" && t("dashboard.admin.title")}
-              {role === "specialiste" && t("dashboard.specialist.title")}
+              {role === "specialiste" && t("dashboard.specialiste.title")}
               {(!role || role === "agent") && t("dashboard.agent.title")}
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               {role === "admin" && t("dashboard.admin.intro")}
-              {role === "specialiste" && t("dashboard.specialist.intro")}
+              {role === "specialiste" && t("dashboard.specialiste.intro")}
               {(!role || role === "agent") && t("dashboard.agent.intro")}
             </p>
           </div>
@@ -92,7 +92,7 @@ function DashboardPage() {
         </div>
 
         {role === "admin" && <AdminDashboard />}
-        {role === "specialiste" && <SpecialistDashboard />}
+        {role === "specialiste" && <SpecialisteDashboard />}
         {(!role || role === "agent") && <AgentDashboard />}
       </main>
     </div>
@@ -103,7 +103,7 @@ function RoleBadge({ role }: { role: AppRole | null }) {
   const { t } = useI18n();
   const map: Record<string, { label: string; cls: string; icon: LucideIcon }> = {
     admin: { label: t("dashboard.role.admin"), cls: "bg-warning/15 text-warning-foreground border-warning/30", icon: ShieldCheck },
-    specialiste: { label: t("dashboard.role.specialist"), cls: "bg-success-soft text-success border-success/30", icon: Activity },
+    specialiste: { label: t("dashboard.role.specialiste"), cls: "bg-success-soft text-success border-success/30", icon: Activity },
     agent: { label: t("dashboard.role.agent"), cls: "bg-primary-soft text-primary border-primary/30", icon: Stethoscope },
   };
   const r = role ?? "agent";
@@ -184,20 +184,20 @@ function AgentDashboard() {
   );
 }
 
-function SpecialistDashboard() {
+function SpecialisteDashboard() {
   const { t } = useI18n();
   return (
     <div className="space-y-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label={t("dashboard.specialist.pending")} value="0" icon={Clock} tone="warning" />
-        <StatCard label={t("dashboard.specialist.consultations")} value="0" icon={FileText} tone="primary" />
+        <StatCard label={t("dashboard.specialiste.pending")} value="0" icon={Clock} tone="warning" />
+        <StatCard label={t("dashboard.specialiste.consultations")} value="0" icon={FileText} tone="primary" />
         <StatCard label={t("dashboard.stats.diagnostics")} value="0" icon={Brain} tone="success" />
         <StatCard label={t("dashboard.stats.resolved")} value="0" icon={CheckCircle2} tone="success" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <ActionCard title={t("dashboard.specialist.pending")} icon={FileText} />
-        <ActionCard title={t("dashboard.specialist.consultations")} icon={Stethoscope} />
-        <ActionCard title={t("dashboard.specialist.messages")} icon={MessageSquare} />
+        <ActionCard title={t("dashboard.specialiste.pending")} icon={FileText} />
+        <ActionCard title={t("dashboard.specialiste.consultations")} icon={Stethoscope} />
+        <ActionCard title={t("dashboard.specialiste.messages")} icon={MessageSquare} />
         <ActionCard title={t("aiperf.nav")} icon={BarChart3} to="/dashboard/ai-performance" />
       </div>
     </div>
@@ -217,7 +217,7 @@ function AdminDashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <ActionCard title={t("dashboard.admin.users")} icon={Users} to="/dashboard/admin/users" />
         <ActionCard title="Agents de santé" icon={Stethoscope} to="/dashboard/admin/agents" />
-        <ActionCard title="Spécialistes" icon={Activity} to="/dashboard/admin/specialists" />
+        <ActionCard title="Spécialistes" icon={Activity} to="/dashboard/admin/specialiste" />
         <ActionCard title={t("aiperf.nav")} icon={BarChart3} to="/dashboard/ai-performance" />
         <ActionCard title="Permissions & accès" icon={ShieldCheck} to="/dashboard/admin/permissions" />
         <ActionCard title={t("dashboard.admin.facilities")} icon={Building2} />

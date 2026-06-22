@@ -36,7 +36,7 @@ export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { listUsersForAdmin } = await import("@/lib/admin.server");
-    return listUsersForAdmin(context.userId);
+    return listUsersForAdmin(context.userId, context.supabase);
   });
 
 export const setUserRole = createServerFn({ method: "POST" })

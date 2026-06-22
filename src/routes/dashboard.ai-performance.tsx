@@ -149,7 +149,7 @@ function AIPerformancePage() {
               {t("aiperf.title")}
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {role === "admin" ? t("aiperf.intro.admin") : t("aiperf.intro.specialist")}
+              {role === "admin" ? t("aiperf.intro.admin") : t("aiperf.intro.specialiste")}
             </p>
           </div>
           <Badge

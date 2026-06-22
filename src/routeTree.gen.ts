@@ -15,7 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardAiPerformanceRouteImport } from './routes/dashboard.ai-performance'
 import { Route as AuthConfirmRouteImport } from './routes/auth.confirm'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
-import { Route as DashboardAdminSpecialistsRouteImport } from './routes/dashboard.admin.specialists'
+import { Route as DashboardAdminSpecialisteRouteImport } from './routes/dashboard.admin.specialiste'
 import { Route as DashboardAdminPermissionsRouteImport } from './routes/dashboard.admin.permissions'
 import { Route as DashboardAdminAgentsRouteImport } from './routes/dashboard.admin.agents'
 
@@ -49,10 +49,10 @@ const DashboardAdminUsersRoute = DashboardAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardAdminSpecialistsRoute =
-  DashboardAdminSpecialistsRouteImport.update({
-    id: '/admin/specialists',
-    path: '/admin/specialists',
+const DashboardAdminSpecialisteRoute =
+  DashboardAdminSpecialisteRouteImport.update({
+    id: '/admin/specialiste',
+    path: '/admin/specialiste',
     getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardAdminPermissionsRoute =
@@ -75,7 +75,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/ai-performance': typeof DashboardAiPerformanceRoute
   '/dashboard/admin/agents': typeof DashboardAdminAgentsRoute
   '/dashboard/admin/permissions': typeof DashboardAdminPermissionsRoute
-  '/dashboard/admin/specialists': typeof DashboardAdminSpecialistsRoute
+  '/dashboard/admin/specialiste': typeof DashboardAdminSpecialisteRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
 export interface FileRoutesByTo {
@@ -86,7 +86,7 @@ export interface FileRoutesByTo {
   '/dashboard/ai-performance': typeof DashboardAiPerformanceRoute
   '/dashboard/admin/agents': typeof DashboardAdminAgentsRoute
   '/dashboard/admin/permissions': typeof DashboardAdminPermissionsRoute
-  '/dashboard/admin/specialists': typeof DashboardAdminSpecialistsRoute
+  '/dashboard/admin/specialiste': typeof DashboardAdminSpecialisteRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
 export interface FileRoutesById {
@@ -98,7 +98,7 @@ export interface FileRoutesById {
   '/dashboard/ai-performance': typeof DashboardAiPerformanceRoute
   '/dashboard/admin/agents': typeof DashboardAdminAgentsRoute
   '/dashboard/admin/permissions': typeof DashboardAdminPermissionsRoute
-  '/dashboard/admin/specialists': typeof DashboardAdminSpecialistsRoute
+  '/dashboard/admin/specialiste': typeof DashboardAdminSpecialisteRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
 export interface FileRouteTypes {
@@ -111,7 +111,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-performance'
     | '/dashboard/admin/agents'
     | '/dashboard/admin/permissions'
-    | '/dashboard/admin/specialists'
+    | '/dashboard/admin/specialiste'
     | '/dashboard/admin/users'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -122,7 +122,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-performance'
     | '/dashboard/admin/agents'
     | '/dashboard/admin/permissions'
-    | '/dashboard/admin/specialists'
+    | '/dashboard/admin/specialiste'
     | '/dashboard/admin/users'
   id:
     | '__root__'
@@ -133,7 +133,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-performance'
     | '/dashboard/admin/agents'
     | '/dashboard/admin/permissions'
-    | '/dashboard/admin/specialists'
+    | '/dashboard/admin/specialiste'
     | '/dashboard/admin/users'
   fileRoutesById: FileRoutesById
 }
@@ -187,11 +187,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminUsersRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/admin/specialists': {
-      id: '/dashboard/admin/specialists'
-      path: '/admin/specialists'
-      fullPath: '/dashboard/admin/specialists'
-      preLoaderRoute: typeof DashboardAdminSpecialistsRouteImport
+    '/dashboard/admin/specialiste': {
+      id: '/dashboard/admin/specialiste'
+      path: '/admin/specialiste'
+      fullPath: '/dashboard/admin/specialiste'
+      preLoaderRoute: typeof DashboardAdminSpecialisteRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/admin/permissions': {
@@ -225,7 +225,7 @@ interface DashboardRouteChildren {
   DashboardAiPerformanceRoute: typeof DashboardAiPerformanceRoute
   DashboardAdminAgentsRoute: typeof DashboardAdminAgentsRoute
   DashboardAdminPermissionsRoute: typeof DashboardAdminPermissionsRoute
-  DashboardAdminSpecialistsRoute: typeof DashboardAdminSpecialistsRoute
+  DashboardAdminSpecialisteRoute: typeof DashboardAdminSpecialisteRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
 }
 
@@ -233,7 +233,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAiPerformanceRoute: DashboardAiPerformanceRoute,
   DashboardAdminAgentsRoute: DashboardAdminAgentsRoute,
   DashboardAdminPermissionsRoute: DashboardAdminPermissionsRoute,
-  DashboardAdminSpecialistsRoute: DashboardAdminSpecialistsRoute,
+  DashboardAdminSpecialisteRoute: DashboardAdminSpecialisteRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
 }
 
