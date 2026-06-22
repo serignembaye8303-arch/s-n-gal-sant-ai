@@ -330,7 +330,7 @@ function AdminUsersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="agent">{t("dashboard.role.agent")}</SelectItem>
-                          <SelectItem value="specialiste">{t("dashboard.role.specialist")}</SelectItem>
+                          <SelectItem value="specialiste">{t("dashboard.role.specialiste")}</SelectItem>
                           <SelectItem value="admin">{t("dashboard.role.admin")}</SelectItem>
                         </SelectContent>
                       </Select>
@@ -592,7 +592,7 @@ function RoleBadgeInline({ role }: { role: AppRole }) {
   const { t } = useI18n();
   const map = {
     admin: { label: t("dashboard.role.admin"), cls: "bg-warning/15 text-warning-foreground border-warning/30", Icon: ShieldCheck },
-    specialiste: { label: t("dashboard.role.specialist"), cls: "bg-success-soft text-success border-success/30", Icon: Activity },
+    specialiste: { label: t("dashboard.role.specialiste"), cls: "bg-success-soft text-success border-success/30", Icon: Activity },
     agent: { label: t("dashboard.role.agent"), cls: "bg-primary-soft text-primary border-primary/30", Icon: Stethoscope },
   } as const;
   const { label, cls, Icon } = map[role];
