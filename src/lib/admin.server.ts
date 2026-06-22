@@ -52,15 +52,19 @@ export interface UpdateManagedUserInput {
   status?: AdminStatus;
 }
 
-export async function assertAdmin(userId: string) {
-  const { data, error } = await supabaseAdmin
+export async function assertAdmin(userId: string, dbClient?: SupabaseClient<Database>) {
+  const db = dbClient ?? supabaseAdmin;
+  const { data, error } = await db
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
     .eq("role", "admin")
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    logAdminUsersError("assertAdmin", error, { userId, code: error.code, hint: error.hint });
+    throw new Error(`Vérification admin impossible: ${error.message}`);
+  }
   if (!data) throw new Error("Forbidden: admin role required");
 }
 
@@ -88,9 +92,8 @@ export async function listUsersForAdmin(
   dbClient?: SupabaseClient<Database>,
 ): Promise<AdminUserRow[]> {
   console.info("[admin.users] listUsersForAdmin:start", { actorId });
-  await assertAdmin(actorId);
-
   const db = dbClient ?? supabaseAdmin;
+  await assertAdmin(actorId, db);
 
   const { data: profiles, error: pErr } = await db
     .from("profiles")
