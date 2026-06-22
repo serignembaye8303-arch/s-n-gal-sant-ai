@@ -92,7 +92,7 @@ function DashboardPage() {
         </div>
 
         {role === "admin" && <AdminDashboard />}
-        {role === "specialiste" && <SpecialistDashboard />}
+        {role === "specialiste" && <SpecialisteDashboard />}
         {(!role || role === "agent") && <AgentDashboard />}
       </main>
     </div>
