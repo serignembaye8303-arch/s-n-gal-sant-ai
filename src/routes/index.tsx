@@ -88,7 +88,7 @@ function Index() {
           </h2>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             <ModuleCard icon={Stethoscope} title={t("modules.agent.title")} desc={t("modules.agent.desc")} accent="primary" />
-            <ModuleCard icon={Activity} title={t("modules.specialist.title")} desc={t("modules.specialist.desc")} accent="success" />
+            <ModuleCard icon={Activity} title={t("modules.specialiste.title")} desc={t("modules.specialiste.desc")} accent="success" />
             <ModuleCard icon={ShieldCheck} title={t("modules.admin.title")} desc={t("modules.admin.desc")} accent="warning" />
           </div>
         </div>
