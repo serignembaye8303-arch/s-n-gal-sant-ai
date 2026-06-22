@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Activity, ArrowLeft, Loader2, Plus, Pencil, Trash2, MoreVertical, ShieldCheck, Stethoscope } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, Loader2, Plus, Pencil, Trash2, MoreVertical, ShieldCheck, Stethoscope } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -49,6 +49,16 @@ import { listUsers, createUser, updateUser, deleteUser } from "@/lib/admin.funct
 type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 type Status = "active" | "suspended" | "disabled";
 
+function describeError(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "Erreur inconnue";
+  }
+}
+
 interface Props {
   scopedRole: Extract<AppRole, "agent" | "specialiste">;
   title: string;
@@ -63,6 +73,7 @@ export function RoleUsersManager({ scopedRole, title, intro }: Props) {
   const deleteUserFn = useServerFn(deleteUser);
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [loadingList, setLoadingList] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const [tab, setTab] = useState<"list" | "create">("list");
   const [editTarget, setEditTarget] = useState<UserRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
@@ -74,11 +85,17 @@ export function RoleUsersManager({ scopedRole, title, intro }: Props) {
 
   const refresh = async () => {
     setLoadingList(true);
+    setListError(null);
     try {
+      console.info("[dashboard/admin/role-users] listUsers:start", { scopedRole });
       const data = await listUsersFn();
       setUsers(data.filter((u) => u.primary_role === scopedRole));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur");
+      const message = describeError(e);
+      console.error("[dashboard/admin/role-users] listUsers:error", e);
+      setListError(message);
+      setUsers([]);
+      toast.error(message);
     } finally {
       setLoadingList(false);
     }
@@ -97,7 +114,8 @@ export function RoleUsersManager({ scopedRole, title, intro }: Props) {
       setDeleteTarget(null);
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur");
+      console.error("[dashboard/admin/role-users] deleteUser:error", e);
+      toast.error(describeError(e));
     }
   };
 
@@ -162,7 +180,22 @@ export function RoleUsersManager({ scopedRole, title, intro }: Props) {
                 <div className="col-span-12 md:col-span-3 text-right">Actions</div>
               </div>
 
-              {loadingList ? (
+              {listError ? (
+                <div className="p-5">
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-destructive">Impossible de charger les utilisateurs</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{listError}</p>
+                        <Button type="button" variant="outline" size="sm" onClick={refresh} className="mt-3">
+                          Réessayer
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : loadingList ? (
                 <div className="flex items-center justify-center py-16">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
