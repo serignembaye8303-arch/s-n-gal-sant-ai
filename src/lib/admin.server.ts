@@ -127,16 +127,20 @@ export async function listUsersForAdmin(
   }
 
   const emailById = new Map<string, string>();
-  const { data: authList, error: aErr } = await supabaseAdmin.auth.admin.listUsers({
-    page: 1,
-    perPage: 1000,
-  });
-  if (aErr) {
-    logAdminUsersError("auth.admin.listUsers", aErr);
-  } else {
-    for (const u of authList.users) {
-      if (u.email) emailById.set(u.id, u.email);
+  try {
+    const { data: authList, error: aErr } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+    if (aErr) {
+      logAdminUsersError("auth.admin.listUsers", aErr);
+    } else {
+      for (const u of authList.users) {
+        if (u.email) emailById.set(u.id, u.email);
+      }
     }
+  } catch (error) {
+    logAdminUsersError("auth.admin.listUsers.exception", error);
   }
 
   const rows = (profiles ?? []).map((p) => {
