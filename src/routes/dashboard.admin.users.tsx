@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type FormEvent } from "react";
-import { Activity, ArrowLeft, Loader2, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, Loader2, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -45,10 +45,33 @@ import { listUsers, setUserRole, createUser, updateUser, deleteUser } from "@/li
 
 export const Route = createFileRoute("/dashboard/admin/users")({
   component: AdminUsersPage,
+  errorComponent: AdminUsersRouteError,
 });
 
 type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 type Status = "active" | "suspended" | "disabled";
+
+function describeError(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "Erreur inconnue";
+  }
+}
+
+function AdminUsersRouteError({ error, reset }: { error: Error; reset: () => void }) {
+  console.error("[dashboard/admin/users] Route render error", error);
+  return (
+    <AdminUsersErrorView
+      title="Erreur de chargement des utilisateurs"
+      message={describeError(error)}
+      details={error.stack ?? describeError(error)}
+      onRetry={reset}
+    />
+  );
+}
 
 function AdminUsersPage() {
   const { user, role, loading } = useAuth();
