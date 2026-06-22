@@ -123,6 +123,7 @@ function AdminUsersPage() {
   const deleteUserFn = useServerFn(deleteUser);
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [loadingList, setLoadingList] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<UserRow | null>(null);
@@ -135,11 +136,21 @@ function AdminUsersPage() {
 
   const refresh = async () => {
     setLoadingList(true);
+    setListError(null);
     try {
+      console.info("[dashboard/admin/users] listUsers:start", { role, userId: user?.id });
       const data = await listUsersFn();
+      console.info("[dashboard/admin/users] listUsers:success", {
+        count: data.length,
+        columns: ["id", "nom", "email", "role", "statut", "created_at"],
+      });
       setUsers(data);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur");
+      const message = describeError(e);
+      console.error("[dashboard/admin/users] listUsers:error", e);
+      setListError(message);
+      setUsers([]);
+      toast.error(message);
     } finally {
       setLoadingList(false);
     }
@@ -156,7 +167,8 @@ function AdminUsersPage() {
       toast.success("Rôle mis à jour");
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur");
+      console.error("[dashboard/admin/users] setUserRole:error", e);
+      toast.error(describeError(e));
     } finally {
       setUpdatingId(null);
     }
@@ -170,7 +182,8 @@ function AdminUsersPage() {
       setDeleteTarget(null);
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erreur");
+      console.error("[dashboard/admin/users] deleteUser:error", e);
+      toast.error(describeError(e));
     }
   };
 
@@ -232,7 +245,7 @@ function AdminUsersPage() {
             </div>
           </Link>
           <Link
-            to="/dashboard/admin/specialists"
+            to="/dashboard/admin/specialiste"
             className="group flex items-center gap-3 rounded-xl border border-border/60 bg-card p-4 shadow-soft transition-all hover:border-primary/40 hover:shadow-elevated"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success-soft text-success">
@@ -254,7 +267,25 @@ function AdminUsersPage() {
             <div className="col-span-12 md:col-span-3 text-right">Actions</div>
           </div>
 
-          {loadingList ? (
+          {listError ? (
+            <div className="p-5">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-destructive">Impossible de charger les utilisateurs</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{listError}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Colonnes attendues : id, nom, email, role, statut, created_at.
+                    </p>
+                    <Button type="button" variant="outline" size="sm" onClick={refresh} className="mt-3">
+                      Réessayer
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : loadingList ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
