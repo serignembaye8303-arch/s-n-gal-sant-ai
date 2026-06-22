@@ -73,6 +73,47 @@ function AdminUsersRouteError({ error, reset }: { error: Error; reset: () => voi
   );
 }
 
+function AdminUsersErrorView({
+  title,
+  message,
+  details,
+  onRetry,
+}: {
+  title: string;
+  message: string;
+  details?: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto flex min-h-screen max-w-3xl items-center px-4 py-10">
+        <div className="w-full rounded-xl border border-destructive/30 bg-card p-6 shadow-soft">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+              <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+              {details && (
+                <pre className="mt-4 max-h-72 overflow-auto rounded-lg border border-border/60 bg-muted/50 p-3 text-xs text-muted-foreground whitespace-pre-wrap">
+                  {details}
+                </pre>
+              )}
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button type="button" onClick={onRetry}>Réessayer</Button>
+                <Button type="button" variant="outline" asChild>
+                  <Link to="/dashboard">Retour au dashboard</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 function AdminUsersPage() {
   const { user, role, loading } = useAuth();
   const { t } = useI18n();
