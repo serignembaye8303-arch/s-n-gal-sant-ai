@@ -142,16 +142,20 @@ function AdminUsersPage() {
   const deleteUserFn = useServerFn(deleteUser);
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [loadingList, setLoadingList] = useState(true);
-  const [listError, setListError] = useState<string | null>(null);
+  const [listError, setListError] = useState<StructuredError | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<UserRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState<number>(1);
 
+  // Redirect only if unauthenticated. If authenticated but wrong role,
+  // render an explicit Access Denied view (no silent redirect).
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
-    if (!loading && user && role && role !== "admin") navigate({ to: "/dashboard" });
-  }, [loading, user, role, navigate]);
+  }, [loading, user, navigate]);
 
   const refresh = async () => {
     setLoadingList(true);
@@ -165,11 +169,10 @@ function AdminUsersPage() {
       });
       setUsers(data);
     } catch (e) {
-      const message = describeError(e);
-      console.error("[dashboard/admin/users] listUsers:error", e);
-      setListError(message);
-      setUsers([]);
-      toast.error(message);
+      const parsed = parseStructuredError(e);
+      console.error("[dashboard/admin/users] listUsers:error", { code: parsed.code, message: parsed.message, raw: e });
+      setListError(parsed);
+      toast.error(`${parsed.code} — ${parsed.message}`);
     } finally {
       setLoadingList(false);
     }
@@ -206,13 +209,39 @@ function AdminUsersPage() {
     }
   };
 
-  if (loading || !user || role !== "admin") {
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (roleFilter === "all") return users;
+    return users.filter((u) => u.primary_role === roleFilter);
+  }, [users, roleFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [roleFilter, pageSize]);
+
+  if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
+
+  if (role !== "admin") {
+    return (
+      <AdminUsersErrorView
+        title="Accès refusé"
+        message={`Votre rôle (${role ?? "inconnu"}) ne permet pas d'accéder à la gestion des utilisateurs. Seul un administrateur peut consulter cette page.`}
+        onRetry={() => navigate({ to: "/dashboard" })}
+      />
+    );
+  }
+
+
 
   return (
     <div className="min-h-screen bg-background">
