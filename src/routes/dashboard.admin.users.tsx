@@ -306,6 +306,68 @@ function AdminUsersPage() {
           </Link>
         </div>
 
+        {/* Non-blocking error banner */}
+        {listError && (
+          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium text-destructive">Erreur lors du chargement</p>
+                  <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-xs font-mono text-destructive">
+                    {listError.code}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{listError.message}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Colonnes attendues : id, nom, email, role, statut, created_at.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={refresh} disabled={loadingList}>
+                    {loadingList ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                    Réessayer
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setListError(null)} className="gap-1">
+                    <X className="h-3.5 w-3.5" /> Ignorer
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filters + pagination controls */}
+        <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-border/60 bg-card p-4 shadow-soft">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Filtrer par rôle</Label>
+            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as RoleFilter)}>
+              <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les rôles</SelectItem>
+                <SelectItem value="admin">Administrateurs</SelectItem>
+                <SelectItem value="specialiste">Spécialistes</SelectItem>
+                <SelectItem value="agent">Agents</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Par page</Label>
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+              <SelectTrigger className="h-9 w-[100px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="ml-auto text-xs text-muted-foreground">
+            {filteredUsers.length} résultat{filteredUsers.length > 1 ? "s" : ""}
+            {users && users.length !== filteredUsers.length && ` sur ${users.length}`}
+          </div>
+        </div>
+
         <div className="rounded-xl border border-border/60 bg-card shadow-soft">
           <div className="grid grid-cols-12 gap-3 border-b border-border/60 px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             <div className="col-span-3">{t("admin.users.user")}</div>
@@ -315,35 +377,17 @@ function AdminUsersPage() {
             <div className="col-span-12 md:col-span-3 text-right">Actions</div>
           </div>
 
-          {listError ? (
-            <div className="p-5">
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-destructive">Impossible de charger les utilisateurs</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{listError}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Colonnes attendues : id, nom, email, role, statut, created_at.
-                    </p>
-                    <Button type="button" variant="outline" size="sm" onClick={refresh} className="mt-3">
-                      Réessayer
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : loadingList ? (
+          {loadingList && !users ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          ) : !users || users.length === 0 ? (
+          ) : pageItems.length === 0 ? (
             <div className="py-16 text-center text-sm text-muted-foreground">
-              {t("admin.users.empty")}
+              {listError ? "Aucune donnée disponible — corrigez l'erreur ci-dessus." : t("admin.users.empty")}
             </div>
           ) : (
             <ul className="divide-y divide-border/60">
-              {users.map((u) => {
+              {pageItems.map((u) => {
                 const isSelf = u.id === user.id;
                 return (
                   <li key={u.id} className="grid grid-cols-12 items-center gap-3 px-5 py-4">
@@ -407,7 +451,25 @@ function AdminUsersPage() {
               })}
             </ul>
           )}
+
+          {/* Pagination */}
+          {filteredUsers.length > pageSize && (
+            <div className="flex items-center justify-between border-t border-border/60 px-5 py-3">
+              <div className="text-xs text-muted-foreground">
+                Page {currentPage} / {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="gap-1">
+                  <ChevronLeft className="h-3.5 w-3.5" /> Précédent
+                </Button>
+                <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="gap-1">
+                  Suivant <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
+
       </main>
 
       <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />
