@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState, type FormEvent } from "react";
-import { Activity, AlertTriangle, ArrowLeft, Loader2, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Activity, AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Loader2, Lock, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical, X } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -50,16 +50,35 @@ export const Route = createFileRoute("/dashboard/admin/users")({
 
 type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 type Status = "active" | "suspended" | "disabled";
+type RoleFilter = "all" | AppRole;
+
+interface StructuredError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+function parseStructuredError(error: unknown): StructuredError {
+  const raw = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && typeof parsed.code === "string") {
+      return {
+        code: parsed.code,
+        message: typeof parsed.message === "string" ? parsed.message : raw,
+        details: parsed.details ?? {},
+      };
+    }
+  } catch {
+    /* not JSON */
+  }
+  return { code: "INTERNAL", message: raw || "Erreur inconnue" };
+}
 
 function describeError(error: unknown) {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return "Erreur inconnue";
-  }
+  return parseStructuredError(error).message;
 }
+
 
 function AdminUsersRouteError({ error, reset }: { error: Error; reset: () => void }) {
   console.error("[dashboard/admin/users] Route render error", error);
