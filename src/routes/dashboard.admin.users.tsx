@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState, type FormEvent } from "react";
-import { Activity, AlertTriangle, ArrowLeft, Loader2, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Activity, AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Loader2, Lock, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical, X } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -50,16 +50,35 @@ export const Route = createFileRoute("/dashboard/admin/users")({
 
 type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 type Status = "active" | "suspended" | "disabled";
+type RoleFilter = "all" | AppRole;
+
+interface StructuredError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+function parseStructuredError(error: unknown): StructuredError {
+  const raw = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && typeof parsed.code === "string") {
+      return {
+        code: parsed.code,
+        message: typeof parsed.message === "string" ? parsed.message : raw,
+        details: parsed.details ?? {},
+      };
+    }
+  } catch {
+    /* not JSON */
+  }
+  return { code: "INTERNAL", message: raw || "Erreur inconnue" };
+}
 
 function describeError(error: unknown) {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return "Erreur inconnue";
-  }
+  return parseStructuredError(error).message;
 }
+
 
 function AdminUsersRouteError({ error, reset }: { error: Error; reset: () => void }) {
   console.error("[dashboard/admin/users] Route render error", error);
@@ -123,16 +142,20 @@ function AdminUsersPage() {
   const deleteUserFn = useServerFn(deleteUser);
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [loadingList, setLoadingList] = useState(true);
-  const [listError, setListError] = useState<string | null>(null);
+  const [listError, setListError] = useState<StructuredError | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<UserRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState<number>(1);
 
+  // Redirect only if unauthenticated. If authenticated but wrong role,
+  // render an explicit Access Denied view (no silent redirect).
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
-    if (!loading && user && role && role !== "admin") navigate({ to: "/dashboard" });
-  }, [loading, user, role, navigate]);
+  }, [loading, user, navigate]);
 
   const refresh = async () => {
     setLoadingList(true);
@@ -146,11 +169,10 @@ function AdminUsersPage() {
       });
       setUsers(data);
     } catch (e) {
-      const message = describeError(e);
-      console.error("[dashboard/admin/users] listUsers:error", e);
-      setListError(message);
-      setUsers([]);
-      toast.error(message);
+      const parsed = parseStructuredError(e);
+      console.error("[dashboard/admin/users] listUsers:error", { code: parsed.code, message: parsed.message, raw: e });
+      setListError(parsed);
+      toast.error(`${parsed.code} — ${parsed.message}`);
     } finally {
       setLoadingList(false);
     }
@@ -187,13 +209,39 @@ function AdminUsersPage() {
     }
   };
 
-  if (loading || !user || role !== "admin") {
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (roleFilter === "all") return users;
+    return users.filter((u) => u.primary_role === roleFilter);
+  }, [users, roleFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [roleFilter, pageSize]);
+
+  if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
+
+  if (role !== "admin") {
+    return (
+      <AdminUsersErrorView
+        title="Accès refusé"
+        message={`Votre rôle (${role ?? "inconnu"}) ne permet pas d'accéder à la gestion des utilisateurs. Seul un administrateur peut consulter cette page.`}
+        onRetry={() => navigate({ to: "/dashboard" })}
+      />
+    );
+  }
+
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -258,6 +306,68 @@ function AdminUsersPage() {
           </Link>
         </div>
 
+        {/* Non-blocking error banner */}
+        {listError && (
+          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium text-destructive">Erreur lors du chargement</p>
+                  <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-xs font-mono text-destructive">
+                    {listError.code}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{listError.message}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Colonnes attendues : id, nom, email, role, statut, created_at.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={refresh} disabled={loadingList}>
+                    {loadingList ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                    Réessayer
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setListError(null)} className="gap-1">
+                    <X className="h-3.5 w-3.5" /> Ignorer
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filters + pagination controls */}
+        <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-border/60 bg-card p-4 shadow-soft">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Filtrer par rôle</Label>
+            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as RoleFilter)}>
+              <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les rôles</SelectItem>
+                <SelectItem value="admin">Administrateurs</SelectItem>
+                <SelectItem value="specialiste">Spécialistes</SelectItem>
+                <SelectItem value="agent">Agents</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Par page</Label>
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+              <SelectTrigger className="h-9 w-[100px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="ml-auto text-xs text-muted-foreground">
+            {filteredUsers.length} résultat{filteredUsers.length > 1 ? "s" : ""}
+            {users && users.length !== filteredUsers.length && ` sur ${users.length}`}
+          </div>
+        </div>
+
         <div className="rounded-xl border border-border/60 bg-card shadow-soft">
           <div className="grid grid-cols-12 gap-3 border-b border-border/60 px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             <div className="col-span-3">{t("admin.users.user")}</div>
@@ -267,35 +377,17 @@ function AdminUsersPage() {
             <div className="col-span-12 md:col-span-3 text-right">Actions</div>
           </div>
 
-          {listError ? (
-            <div className="p-5">
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-destructive">Impossible de charger les utilisateurs</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{listError}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Colonnes attendues : id, nom, email, role, statut, created_at.
-                    </p>
-                    <Button type="button" variant="outline" size="sm" onClick={refresh} className="mt-3">
-                      Réessayer
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : loadingList ? (
+          {loadingList && !users ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          ) : !users || users.length === 0 ? (
+          ) : pageItems.length === 0 ? (
             <div className="py-16 text-center text-sm text-muted-foreground">
-              {t("admin.users.empty")}
+              {listError ? "Aucune donnée disponible — corrigez l'erreur ci-dessus." : t("admin.users.empty")}
             </div>
           ) : (
             <ul className="divide-y divide-border/60">
-              {users.map((u) => {
+              {pageItems.map((u) => {
                 const isSelf = u.id === user.id;
                 return (
                   <li key={u.id} className="grid grid-cols-12 items-center gap-3 px-5 py-4">
@@ -359,7 +451,25 @@ function AdminUsersPage() {
               })}
             </ul>
           )}
+
+          {/* Pagination */}
+          {filteredUsers.length > pageSize && (
+            <div className="flex items-center justify-between border-t border-border/60 px-5 py-3">
+              <div className="text-xs text-muted-foreground">
+                Page {currentPage} / {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="gap-1">
+                  <ChevronLeft className="h-3.5 w-3.5" /> Précédent
+                </Button>
+                <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="gap-1">
+                  Suivant <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
+
       </main>
 
       <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={refresh} />

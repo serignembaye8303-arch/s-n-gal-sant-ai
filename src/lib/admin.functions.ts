@@ -35,9 +35,20 @@ const deleteUserSchema = z.object({
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { listUsersForAdmin } = await import("@/lib/admin.server");
-    return listUsersForAdmin(context.userId, context.supabase);
+    const { listUsersForAdmin, AdminListError } = await import("@/lib/admin.server");
+    try {
+      return await listUsersForAdmin(context.userId, context.supabase);
+    } catch (err) {
+      if (err instanceof AdminListError) {
+        // Surface structured payload to the client via Error.message (JSON).
+        throw err;
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[admin.users] listUsers:unhandled", err);
+      throw new Error(JSON.stringify({ code: "INTERNAL", message, details: {} }));
+    }
   });
+
 
 export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
