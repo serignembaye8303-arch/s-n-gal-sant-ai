@@ -19,6 +19,36 @@ function logAdminUsersError(stage: string, error: unknown, details: Record<strin
   });
 }
 
+export type AdminListErrorCode =
+  | "FORBIDDEN"
+  | "MISSING_TABLE"
+  | "MISSING_COLUMN"
+  | "DB_ERROR"
+  | "SCHEMA_INVALID"
+  | "INTERNAL";
+
+export class AdminListError extends Error {
+  code: AdminListErrorCode;
+  details?: Record<string, unknown>;
+  constructor(code: AdminListErrorCode, message: string, details?: Record<string, unknown>) {
+    // Encode structured payload in message so it survives the RPC boundary.
+    super(JSON.stringify({ code, message, details: details ?? {} }));
+    this.name = "AdminListError";
+    this.code = code;
+    this.details = details;
+  }
+}
+
+function mapPgError(err: { code?: string | null; message: string; hint?: string | null }): AdminListErrorCode {
+  // PostgREST/Postgres codes: 42P01 undefined_table, 42703 undefined_column, PGRST205 missing relation
+  if (err.code === "42P01" || err.code === "PGRST205") return "MISSING_TABLE";
+  if (err.code === "42703" || err.code === "PGRST204") return "MISSING_COLUMN";
+  return "DB_ERROR";
+}
+
+const REQUIRED_COLUMNS = ["id", "nom", "email", "role", "statut", "created_at"] as const;
+
+
 export interface AdminUserRow {
   id: string;
   email: string;
