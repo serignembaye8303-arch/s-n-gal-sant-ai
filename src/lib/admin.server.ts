@@ -93,9 +93,11 @@ export async function assertAdmin(userId: string, dbClient?: SupabaseClient<Data
 
   if (error) {
     logAdminUsersError("assertAdmin", error, { userId, code: error.code, hint: error.hint });
-    throw new Error(`Vérification admin impossible: ${error.message}`);
+    throw new AdminListError("DB_ERROR", `Vérification admin impossible: ${error.message}`, {
+      pg_code: error.code,
+    });
   }
-  if (!data) throw new Error("Forbidden: admin role required");
+  if (!data) throw new AdminListError("FORBIDDEN", "Accès refusé : rôle administrateur requis.");
 }
 
 export async function logAction(
@@ -130,16 +132,25 @@ export async function listUsersForAdmin(
     .select("id, full_name, phone, facility, status, created_at")
     .order("created_at", { ascending: false });
   if (pErr) {
-    logAdminUsersError("profiles.select", pErr, { code: pErr.code, hint: pErr.hint });
-    throw new Error(`Impossible de récupérer les profils utilisateurs: ${pErr.message}`);
+    const code = mapPgError(pErr);
+    logAdminUsersError("profiles.select", pErr, { code: pErr.code, mapped: code });
+    throw new AdminListError(code, `Lecture impossible (profiles): ${pErr.message}`, {
+      pg_code: pErr.code,
+      table: "profiles",
+      expected_columns: REQUIRED_COLUMNS,
+    });
   }
 
   const { data: rolesData, error: rErr } = await db
     .from("user_roles")
     .select("user_id, role");
   if (rErr) {
-    logAdminUsersError("user_roles.select", rErr, { code: rErr.code, hint: rErr.hint });
-    throw new Error(`Impossible de récupérer les rôles utilisateurs: ${rErr.message}`);
+    const code = mapPgError(rErr);
+    logAdminUsersError("user_roles.select", rErr, { code: rErr.code, mapped: code });
+    throw new AdminListError(code, `Lecture impossible (user_roles): ${rErr.message}`, {
+      pg_code: rErr.code,
+      table: "user_roles",
+    });
   }
 
   const rolesByUser = new Map<string, AdminRole[]>();
@@ -173,7 +184,8 @@ export async function listUsersForAdmin(
     logAdminUsersError("auth.admin.listUsers.exception", error);
   }
 
-  const rows = (profiles ?? []).map((p) => {
+  const rows: AdminUserRow[] = [];
+  for (const p of profiles ?? []) {
     const userRoles = rolesByUser.get(p.id) ?? [];
     const primary: AdminRole = userRoles.includes("admin")
       ? "admin"
@@ -183,7 +195,15 @@ export async function listUsersForAdmin(
     const status = (p.status ?? "active") as AdminStatus;
     const nom = p.full_name ?? "";
 
-    return {
+    // Schema validation: required columns
+    if (!p.id || typeof p.created_at !== "string") {
+      logAdminUsersError("schema.invalid_row", new Error("Row missing id or created_at"), { row: p });
+      throw new AdminListError("SCHEMA_INVALID", "Schéma invalide : colonnes id/created_at manquantes.", {
+        expected_columns: REQUIRED_COLUMNS,
+      });
+    }
+
+    rows.push({
       id: p.id,
       email: emailById.get(p.id) ?? "",
       nom,
@@ -196,8 +216,8 @@ export async function listUsersForAdmin(
       role: primary,
       roles: userRoles,
       primary_role: primary,
-    };
-  });
+    });
+  }
 
   console.info("[admin.users] listUsersForAdmin:success", { count: rows.length });
   return rows;
@@ -205,6 +225,7 @@ export async function listUsersForAdmin(
 
 export async function setUserRoleForAdmin(actorId: string, userId: string, role: AdminRole) {
   await assertAdmin(actorId);
+
 
   if (userId === actorId && role !== "admin") {
     throw new Error("You cannot remove your own admin role");
