@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Activity, AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Loader2, Lock, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical, X } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, Loader2, Lock, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical, X } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
