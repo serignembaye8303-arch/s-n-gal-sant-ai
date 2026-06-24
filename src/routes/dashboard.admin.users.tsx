@@ -469,7 +469,7 @@ function AdminUsersPage() {
                 const isSelf = u.id === user.id;
                 return (
                   <li key={u.id} className="grid grid-cols-12 items-center gap-3 px-5 py-4">
-                    <div className="col-span-12 md:col-span-3">
+                    <div className="col-span-12 md:col-span-2">
                       <p className="font-medium">
                         {u.full_name || <span className="text-muted-foreground">—</span>}
                         {isSelf && (
@@ -478,18 +478,23 @@ function AdminUsersPage() {
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-muted-foreground">{u.email || u.id.slice(0, 8)}</p>
+                    </div>
+                    <div className="col-span-6 hidden text-sm text-muted-foreground md:col-span-2 md:block">
+                      {u.email || u.id.slice(0, 8)}
                     </div>
                     <div className="col-span-6 hidden text-sm text-muted-foreground md:col-span-2 md:block">
                       {u.facility || "—"}
                     </div>
-                    <div className="col-span-6 hidden md:col-span-2 md:block">
+                    <div className="col-span-6 hidden md:col-span-1 md:block">
                       <StatusBadge status={u.status} />
                     </div>
                     <div className="col-span-6 hidden md:col-span-2 md:block">
                       <RoleBadgeInline role={u.primary_role} />
                     </div>
-                    <div className="col-span-12 flex items-center justify-end gap-2 md:col-span-3">
+                    <div className="col-span-6 hidden text-xs text-muted-foreground md:col-span-1 md:block">
+                      {u.created_at ? new Date(u.created_at).toLocaleDateString("fr-FR") : "—"}
+                    </div>
+                    <div className="col-span-12 flex items-center justify-end gap-2 md:col-span-2">
                       <Select
                         value={u.primary_role}
                         onValueChange={(v) => handleRoleChange(u.id, v as AppRole)}
