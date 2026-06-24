@@ -214,19 +214,46 @@ function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = useMemo(() => {
-    if (!users) return [];
-    if (roleFilter === "all") return users;
-    return users.filter((u) => u.primary_role === roleFilter);
-  }, [users, roleFilter]);
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+    setPage(1);
+  };
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const sortedUsers = useMemo(() => {
+    if (!users) return [];
+    let result = roleFilter === "all" ? [...users] : users.filter((u) => u.primary_role === roleFilter);
+    const dir = sortDirection === "asc" ? 1 : -1;
+    result.sort((a, b) => {
+      switch (sortColumn) {
+        case "full_name":
+          return (a.full_name || "").localeCompare(b.full_name || "") * dir;
+        case "email":
+          return (a.email || "").localeCompare(b.email || "") * dir;
+        case "primary_role":
+          return (a.primary_role || "").localeCompare(b.primary_role || "") * dir;
+        case "status":
+          return (a.status || "").localeCompare(b.status || "") * dir;
+        case "created_at":
+          return ((a.created_at || "") > (b.created_at || "") ? 1 : (a.created_at || "") < (b.created_at || "") ? -1 : 0) * dir;
+        default:
+          return 0;
+      }
+    });
+    return result;
+  }, [users, roleFilter, sortColumn, sortDirection]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const pageItems = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pageItems = sortedUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [roleFilter, pageSize]);
+  }, [roleFilter, pageSize, sortColumn, sortDirection]);
 
   if (loading || !user) {
     return (
