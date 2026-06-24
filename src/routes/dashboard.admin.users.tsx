@@ -52,6 +52,9 @@ type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 type Status = "active" | "suspended" | "disabled";
 type RoleFilter = "all" | AppRole;
 
+type SortColumn = "full_name" | "email" | "primary_role" | "status" | "created_at";
+type SortDirection = "asc" | "desc";
+
 interface StructuredError {
   code: string;
   message: string;
