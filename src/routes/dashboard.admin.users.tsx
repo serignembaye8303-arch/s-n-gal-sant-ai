@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Activity, AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Loader2, Lock, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical, X } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight, Loader2, Lock, ShieldCheck, Stethoscope, Plus, Pencil, Trash2, MoreVertical, X } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -51,6 +51,9 @@ export const Route = createFileRoute("/dashboard/admin/users")({
 type UserRow = Awaited<ReturnType<typeof listUsers>>[number];
 type Status = "active" | "suspended" | "disabled";
 type RoleFilter = "all" | AppRole;
+
+type SortColumn = "full_name" | "email" | "primary_role" | "status" | "created_at";
+type SortDirection = "asc" | "desc";
 
 interface StructuredError {
   code: string;
@@ -133,6 +136,40 @@ function AdminUsersErrorView({
   );
 }
 
+function SortHeader({
+  label,
+  column,
+  currentColumn,
+  direction,
+  onSort,
+}: {
+  label: string;
+  column: SortColumn;
+  currentColumn: SortColumn;
+  direction: SortDirection;
+  onSort: (col: SortColumn) => void;
+}) {
+  const isActive = currentColumn === column;
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(column)}
+      className={`inline-flex items-center gap-1 ${isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+    >
+      <span className="uppercase tracking-wide">{label}</span>
+      {isActive ? (
+        direction === "asc" ? (
+          <ArrowUp className="h-3 w-3" />
+        ) : (
+          <ArrowDown className="h-3 w-3" />
+        )
+      ) : (
+        <ArrowUpDown className="h-3 w-3 opacity-50" />
+      )}
+    </button>
+  );
+}
+
 function AdminUsersPage() {
   const { user, role, loading } = useAuth();
   const { t } = useI18n();
@@ -150,6 +187,8 @@ function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
+  const [sortColumn, setSortColumn] = useState<SortColumn>("created_at");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   // Redirect only if unauthenticated. If authenticated but wrong role,
   // render an explicit Access Denied view (no silent redirect).
@@ -209,19 +248,46 @@ function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = useMemo(() => {
-    if (!users) return [];
-    if (roleFilter === "all") return users;
-    return users.filter((u) => u.primary_role === roleFilter);
-  }, [users, roleFilter]);
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+    setPage(1);
+  };
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const sortedUsers = useMemo(() => {
+    if (!users) return [];
+    let result = roleFilter === "all" ? [...users] : users.filter((u) => u.primary_role === roleFilter);
+    const dir = sortDirection === "asc" ? 1 : -1;
+    result.sort((a, b) => {
+      switch (sortColumn) {
+        case "full_name":
+          return (a.full_name || "").localeCompare(b.full_name || "") * dir;
+        case "email":
+          return (a.email || "").localeCompare(b.email || "") * dir;
+        case "primary_role":
+          return (a.primary_role || "").localeCompare(b.primary_role || "") * dir;
+        case "status":
+          return (a.status || "").localeCompare(b.status || "") * dir;
+        case "created_at":
+          return ((a.created_at || "") > (b.created_at || "") ? 1 : (a.created_at || "") < (b.created_at || "") ? -1 : 0) * dir;
+        default:
+          return 0;
+      }
+    });
+    return result;
+  }, [users, roleFilter, sortColumn, sortDirection]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const pageItems = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pageItems = sortedUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [roleFilter, pageSize]);
+  }, [roleFilter, pageSize, sortColumn, sortDirection]);
 
   if (loading || !user) {
     return (
@@ -363,18 +429,30 @@ function AdminUsersPage() {
             </Select>
           </div>
           <div className="ml-auto text-xs text-muted-foreground">
-            {filteredUsers.length} résultat{filteredUsers.length > 1 ? "s" : ""}
-            {users && users.length !== filteredUsers.length && ` sur ${users.length}`}
+            {sortedUsers.length} résultat{sortedUsers.length > 1 ? "s" : ""}
+            {users && users.length !== sortedUsers.length && ` sur ${users.length}`}
           </div>
         </div>
 
         <div className="rounded-xl border border-border/60 bg-card shadow-soft">
           <div className="grid grid-cols-12 gap-3 border-b border-border/60 px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            <div className="col-span-3">{t("admin.users.user")}</div>
+            <div className="col-span-2">
+              <SortHeader label="Nom" column="full_name" currentColumn={sortColumn} direction={sortDirection} onSort={handleSort} />
+            </div>
+            <div className="col-span-2 hidden md:block">
+              <SortHeader label="Email" column="email" currentColumn={sortColumn} direction={sortDirection} onSort={handleSort} />
+            </div>
             <div className="col-span-2 hidden md:block">{t("auth.facility")}</div>
-            <div className="col-span-2 hidden md:block">Statut</div>
-            <div className="col-span-2 hidden md:block">{t("admin.users.current")}</div>
-            <div className="col-span-12 md:col-span-3 text-right">Actions</div>
+            <div className="col-span-1 hidden md:block">
+              <SortHeader label="Statut" column="status" currentColumn={sortColumn} direction={sortDirection} onSort={handleSort} />
+            </div>
+            <div className="col-span-2 hidden md:block">
+              <SortHeader label="Rôle" column="primary_role" currentColumn={sortColumn} direction={sortDirection} onSort={handleSort} />
+            </div>
+            <div className="col-span-1 hidden md:block">
+              <SortHeader label="Créé le" column="created_at" currentColumn={sortColumn} direction={sortDirection} onSort={handleSort} />
+            </div>
+            <div className="col-span-12 md:col-span-2 text-right">Actions</div>
           </div>
 
           {loadingList && !users ? (
@@ -391,7 +469,7 @@ function AdminUsersPage() {
                 const isSelf = u.id === user.id;
                 return (
                   <li key={u.id} className="grid grid-cols-12 items-center gap-3 px-5 py-4">
-                    <div className="col-span-12 md:col-span-3">
+                    <div className="col-span-12 md:col-span-2">
                       <p className="font-medium">
                         {u.full_name || <span className="text-muted-foreground">—</span>}
                         {isSelf && (
@@ -400,18 +478,23 @@ function AdminUsersPage() {
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-muted-foreground">{u.email || u.id.slice(0, 8)}</p>
+                    </div>
+                    <div className="col-span-6 hidden text-sm text-muted-foreground md:col-span-2 md:block">
+                      {u.email || u.id.slice(0, 8)}
                     </div>
                     <div className="col-span-6 hidden text-sm text-muted-foreground md:col-span-2 md:block">
                       {u.facility || "—"}
                     </div>
-                    <div className="col-span-6 hidden md:col-span-2 md:block">
+                    <div className="col-span-6 hidden md:col-span-1 md:block">
                       <StatusBadge status={u.status} />
                     </div>
                     <div className="col-span-6 hidden md:col-span-2 md:block">
                       <RoleBadgeInline role={u.primary_role} />
                     </div>
-                    <div className="col-span-12 flex items-center justify-end gap-2 md:col-span-3">
+                    <div className="col-span-6 hidden text-xs text-muted-foreground md:col-span-1 md:block">
+                      {u.created_at ? new Date(u.created_at).toLocaleDateString("fr-FR") : "—"}
+                    </div>
+                    <div className="col-span-12 flex items-center justify-end gap-2 md:col-span-2">
                       <Select
                         value={u.primary_role}
                         onValueChange={(v) => handleRoleChange(u.id, v as AppRole)}
@@ -453,7 +536,7 @@ function AdminUsersPage() {
           )}
 
           {/* Pagination */}
-          {filteredUsers.length > pageSize && (
+          {sortedUsers.length > pageSize && (
             <div className="flex items-center justify-between border-t border-border/60 px-5 py-3">
               <div className="text-xs text-muted-foreground">
                 Page {currentPage} / {totalPages}
