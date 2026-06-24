@@ -395,8 +395,8 @@ function AdminUsersPage() {
             </Select>
           </div>
           <div className="ml-auto text-xs text-muted-foreground">
-            {filteredUsers.length} résultat{filteredUsers.length > 1 ? "s" : ""}
-            {users && users.length !== filteredUsers.length && ` sur ${users.length}`}
+            {sortedUsers.length} résultat{sortedUsers.length > 1 ? "s" : ""}
+            {users && users.length !== sortedUsers.length && ` sur ${users.length}`}
           </div>
         </div>
 
@@ -485,7 +485,7 @@ function AdminUsersPage() {
           )}
 
           {/* Pagination */}
-          {filteredUsers.length > pageSize && (
+          {sortedUsers.length > pageSize && (
             <div className="flex items-center justify-between border-t border-border/60 px-5 py-3">
               <div className="text-xs text-muted-foreground">
                 Page {currentPage} / {totalPages}
