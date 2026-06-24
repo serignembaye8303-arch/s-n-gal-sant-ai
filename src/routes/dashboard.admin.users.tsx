@@ -153,6 +153,8 @@ function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
+  const [sortColumn, setSortColumn] = useState<SortColumn>("created_at");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   // Redirect only if unauthenticated. If authenticated but wrong role,
   // render an explicit Access Denied view (no silent redirect).
