@@ -436,11 +436,23 @@ function AdminUsersPage() {
 
         <div className="rounded-xl border border-border/60 bg-card shadow-soft">
           <div className="grid grid-cols-12 gap-3 border-b border-border/60 px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            <div className="col-span-3">{t("admin.users.user")}</div>
+            <div className="col-span-2">
+              <SortHeader label="Nom" column="full_name" currentColumn={sortColumn} direction={sortDirection} onSort={handleSort} />
+            </div>
+            <div className="col-span-2 hidden md:block">
+              <SortHeader label="Email" column="email" currentColumn={sortColumn} direction={sortDirection} onSort={handleSort} />
+            </div>
             <div className="col-span-2 hidden md:block">{t("auth.facility")}</div>
-            <div className="col-span-2 hidden md:block">Statut</div>
-            <div className="col-span-2 hidden md:block">{t("admin.users.current")}</div>
-            <div className="col-span-12 md:col-span-3 text-right">Actions</div>
+            <div className="col-span-1 hidden md:block">
+              <SortHeader label="Statut" column="status" currentColumn={sortColumn} direction={sortDirection} onSort={handleSort} />
+            </div>
+            <div className="col-span-2 hidden md:block">
+              <SortHeader label="Rôle" column="primary_role" currentColumn={sortColumn} direction={sortDirection} onSort={handleSort} />
+            </div>
+            <div className="col-span-1 hidden md:block">
+              <SortHeader label="Créé le" column="created_at" currentColumn={sortColumn} direction={sortDirection} onSort={handleSort} />
+            </div>
+            <div className="col-span-12 md:col-span-2 text-right">Actions</div>
           </div>
 
           {loadingList && !users ? (
