@@ -136,6 +136,40 @@ function AdminUsersErrorView({
   );
 }
 
+function SortHeader({
+  label,
+  column,
+  currentColumn,
+  direction,
+  onSort,
+}: {
+  label: string;
+  column: SortColumn;
+  currentColumn: SortColumn;
+  direction: SortDirection;
+  onSort: (col: SortColumn) => void;
+}) {
+  const isActive = currentColumn === column;
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(column)}
+      className={`inline-flex items-center gap-1 ${isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+    >
+      <span className="uppercase tracking-wide">{label}</span>
+      {isActive ? (
+        direction === "asc" ? (
+          <ArrowUp className="h-3 w-3" />
+        ) : (
+          <ArrowDown className="h-3 w-3" />
+        )
+      ) : (
+        <ArrowUpDown className="h-3 w-3 opacity-50" />
+      )}
+    </button>
+  );
+}
+
 function AdminUsersPage() {
   const { user, role, loading } = useAuth();
   const { t } = useI18n();
