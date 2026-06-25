@@ -55,6 +55,8 @@ type RoleFilter = "all" | AppRole;
 type SortColumn = "full_name" | "email" | "primary_role" | "status" | "created_at";
 type SortDirection = "asc" | "desc";
 
+type ListUsersPayload = UserRow[] | { users?: UserRow[]; data?: UserRow[]; rows?: UserRow[] } | null | undefined;
+
 interface StructuredError {
   code: string;
   message: string;
@@ -80,6 +82,21 @@ function parseStructuredError(error: unknown): StructuredError {
 
 function describeError(error: unknown) {
   return parseStructuredError(error).message;
+}
+
+function normalizeUserRows(payload: ListUsersPayload): UserRow[] {
+  if (Array.isArray(payload)) return payload;
+  if (payload && typeof payload === "object") {
+    if (Array.isArray(payload.users)) return payload.users;
+    if (Array.isArray(payload.data)) return payload.data;
+    if (Array.isArray(payload.rows)) return payload.rows;
+  }
+  console.error("[dashboard/admin/users] listUsers:invalid_payload", payload);
+  throw new Error(JSON.stringify({
+    code: "INVALID_RESPONSE",
+    message: "Réponse backend invalide : la liste des utilisateurs doit être un tableau.",
+    details: { expected: "UserRow[]", received: typeof payload },
+  }));
 }
 
 
@@ -201,7 +218,7 @@ function AdminUsersPage() {
     setListError(null);
     try {
       console.info("[dashboard/admin/users] listUsers:start", { role, userId: user?.id });
-      const data = await listUsersFn();
+      const data = normalizeUserRows(await listUsersFn() as ListUsersPayload);
       console.info("[dashboard/admin/users] listUsers:success", {
         count: data.length,
         columns: ["id", "nom", "email", "role", "statut", "created_at"],
@@ -259,8 +276,8 @@ function AdminUsersPage() {
   };
 
   const sortedUsers = useMemo(() => {
-    if (!users) return [];
-    let result = roleFilter === "all" ? [...users] : users.filter((u) => u.primary_role === roleFilter);
+    if (!Array.isArray(users)) return [];
+    const result = roleFilter === "all" ? [...users] : users.filter((u) => u.primary_role === roleFilter);
     const dir = sortDirection === "asc" ? 1 : -1;
     result.sort((a, b) => {
       switch (sortColumn) {
