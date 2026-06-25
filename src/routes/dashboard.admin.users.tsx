@@ -55,7 +55,11 @@ type RoleFilter = "all" | AppRole;
 type SortColumn = "full_name" | "email" | "primary_role" | "status" | "created_at";
 type SortDirection = "asc" | "desc";
 
-type ListUsersPayload = UserRow[] | { users?: UserRow[]; data?: UserRow[]; rows?: UserRow[] } | null | undefined;
+type ListUsersPayload =
+  | UserRow[]
+  | { users?: unknown; data?: unknown; rows?: unknown; result?: unknown }
+  | null
+  | undefined;
 
 interface StructuredError {
   code: string;
@@ -85,19 +89,29 @@ function describeError(error: unknown) {
 }
 
 function normalizeUserRows(payload: ListUsersPayload): UserRow[] {
-  if (Array.isArray(payload)) return payload;
+  // Direct array
+  if (Array.isArray(payload)) return payload as UserRow[];
   if (payload && typeof payload === "object") {
-    if (Array.isArray(payload.users)) return payload.users;
-    if (Array.isArray(payload.data)) return payload.data;
-    if (Array.isArray(payload.rows)) return payload.rows;
+    const p = payload as Record<string, unknown>;
+    // TanStack server-fn wrappers / common envelopes
+    if (Array.isArray(p.result)) return p.result as UserRow[];
+    if (Array.isArray(p.users)) return p.users as UserRow[];
+    if (Array.isArray(p.data)) return p.data as UserRow[];
+    if (Array.isArray(p.rows)) return p.rows as UserRow[];
+    // Nested { result: { data: [...] } }
+    if (p.result && typeof p.result === "object") {
+      const r = p.result as Record<string, unknown>;
+      if (Array.isArray(r.data)) return r.data as UserRow[];
+      if (Array.isArray(r.users)) return r.users as UserRow[];
+      if (Array.isArray(r.rows)) return r.rows as UserRow[];
+    }
   }
-  console.error("[dashboard/admin/users] listUsers:invalid_payload", payload);
-  throw new Error(JSON.stringify({
-    code: "INVALID_RESPONSE",
-    message: "Réponse backend invalide : la liste des utilisateurs doit être un tableau.",
-    details: { expected: "UserRow[]", received: typeof payload },
-  }));
+  // Empty/unknown payload → degrade gracefully instead of breaking the page.
+  console.warn("[dashboard/admin/users] listUsers:empty_or_unknown_payload", payload);
+  return [];
 }
+
+
 
 
 function AdminUsersRouteError({ error, reset }: { error: Error; reset: () => void }) {
