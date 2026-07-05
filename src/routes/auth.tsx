@@ -13,8 +13,18 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" ? s.next : undefined,
+  }),
   component: AuthPage,
 });
+
+function safeNext(next: string | undefined): string | null {
+  if (!next) return null;
+  // same-origin relative path only
+  if (!next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
 
 const signInSchema = z.object({
   email: z.string().trim().email().max(255),
@@ -29,11 +39,18 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const { next } = Route.useSearch();
+
   useEffect(() => {
     if (!loading && user) {
-      navigate({ to: roleHomePath(role) });
+      const target = safeNext(next);
+      if (target) {
+        window.location.href = target;
+      } else {
+        navigate({ to: roleHomePath(role) });
+      }
     }
-  }, [user, loading, role, navigate]);
+  }, [user, loading, role, navigate, next]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -66,7 +83,12 @@ function AuthPage() {
       }
 
       const targetRole = await fetchPrimaryRole(signInData.user.id);
-      navigate({ to: roleHomePath(targetRole) });
+      const target = safeNext(next);
+      if (target) {
+        window.location.href = target;
+      } else {
+        navigate({ to: roleHomePath(targetRole) });
+      }
     } finally {
       setSubmitting(false);
     }
